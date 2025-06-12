@@ -1,24 +1,28 @@
 import React, { useEffect, useState } from 'react';
 import axios from 'axios';
+import AddTask from './AddTask';
 
 function TaskList() {
   const [tasks, setTasks] = useState([]);
 
-  useEffect(() => {
+  const fetchTasks = () => {
     axios.get('http://localhost:8080/api/tasks')
       .then(response => {
         setTasks(response.data);
-        console.log(response.data);
-        
       })
       .catch(error => {
         console.error('タスクの取得に失敗しました:', error);
       });
+  };
+
+  useEffect(() => {
+    fetchTasks();
   }, []);
 
   return (
     <div>
       <h2>タスク一覧</h2>
+      <AddTask onTaskAdded={fetchTasks} />
       <ul>
         {tasks.map(task => (
           <li key={task.id}>
