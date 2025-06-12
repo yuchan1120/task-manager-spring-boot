@@ -15,6 +15,11 @@ import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.PostMapping;
 import org.springframework.web.bind.annotation.RequestBody;
 
+import org.springframework.web.bind.annotation.PutMapping;
+import org.springframework.web.bind.annotation.PathVariable;
+
+import java.util.Optional;
+
 @CrossOrigin(origins = "http://localhost:3000")
 @RestController
 @RequestMapping("/api/tasks")
@@ -37,4 +42,16 @@ public class TaskController {
         return new ResponseEntity<>(createdTask, HttpStatus.CREATED);
     }
 
+    @PutMapping("/{id}/toggle")
+    public ResponseEntity<Task> toggleTask(@PathVariable Long id) {
+        Optional<Task> optionalTask = taskService.getTaskById(id); // taskRepository → taskService に変更
+        if (optionalTask.isPresent()) {
+            Task task = optionalTask.get();
+            task.setCompleted(!task.isCompleted());
+            taskService.saveTask(task); // taskRepository.save → service経由に
+            return ResponseEntity.ok(task);
+        } else {
+            return ResponseEntity.notFound().build();
+        }
+    }
 }
