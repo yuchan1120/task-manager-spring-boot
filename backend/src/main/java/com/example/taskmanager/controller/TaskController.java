@@ -18,6 +18,8 @@ import org.springframework.web.bind.annotation.RequestBody;
 import org.springframework.web.bind.annotation.PutMapping;
 import org.springframework.web.bind.annotation.PathVariable;
 
+import org.springframework.web.bind.annotation.DeleteMapping;
+
 import java.util.Optional;
 
 @CrossOrigin(origins = "http://localhost:3000")
@@ -50,6 +52,17 @@ public class TaskController {
             task.setCompleted(!task.isCompleted());
             taskService.saveTask(task); // taskRepository.save → service経由に
             return ResponseEntity.ok(task);
+        } else {
+            return ResponseEntity.notFound().build();
+        }
+    }
+
+    @DeleteMapping("/{id}")
+    public ResponseEntity<Void> deleteTask(@PathVariable Long id) {
+        Optional<Task> optionalTask = taskService.getTaskById(id);
+        if (optionalTask.isPresent()) {
+            taskService.deleteTask(id);
+            return ResponseEntity.noContent().build();
         } else {
             return ResponseEntity.notFound().build();
         }
