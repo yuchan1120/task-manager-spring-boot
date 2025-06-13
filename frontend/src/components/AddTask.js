@@ -1,44 +1,56 @@
-// src/components/AddTask.js
 import React, { useState } from 'react';
-import axios from 'axios';
+import { addTask } from '../api';
 
 function AddTask({ onTaskAdded }) {
   const [title, setTitle] = useState('');
   const [description, setDescription] = useState('');
+  const [loading, setLoading] = useState(false);
+  const [error, setError] = useState('');
 
   const handleSubmit = async (e) => {
     e.preventDefault();
-    if (!title.trim()) return;
+    if (!title.trim() || !description.trim()) {
+      setError('タイトルと説明は必須です');
+      return;
+    }
 
+    setLoading(true);
+    setError('');
     try {
-      await axios.post('http://localhost:8080/api/tasks', {
-        title,
-        description,
-        completed: false,
-      });
+      await addTask({ title, description, completed: false });
       setTitle('');
       setDescription('');
-      onTaskAdded(); // 親から渡された一覧更新関数を呼び出す
-    } catch (error) {
-      console.error('タスクの追加に失敗しました:', error);
+      onTaskAdded();
+    } catch (err) {
+      setError('タスクの追加に失敗しました');
+      console.error(err);
+    } finally {
+      setLoading(false);
     }
   };
 
   return (
     <form onSubmit={handleSubmit}>
-      <input
-        type="text"
-        placeholder="タイトル"
-        value={title}
-        onChange={(e) => setTitle(e.target.value)}
-      />
-      <input
-        type="text"
-        placeholder="説明"
-        value={description}
-        onChange={(e) => setDescription(e.target.value)}
-      />
-      <button type="submit">追加</button>
+      <label>
+        タイトル:
+        <input
+          type="text"
+          value={title}
+          onChange={(e) => setTitle(e.target.value)}
+        />
+      </label>
+      <label>
+        説明:
+        <input
+          type="text"
+          value={description}
+          onChange={(e) => setDescription(e.target.value)}
+        />
+      </label>
+      <button type="submit" disabled={loading}>
+        {loading ? '追加中...' : '追加'}
+      </button>
+      {error && <p style={{ color: 'red' }}>{error}</p>}
     </form>
   );
 }
