@@ -1,13 +1,18 @@
 import React, { useState } from 'react';
 import { addTask } from '../api';
+import type { NewTask } from '../api';
 
-function AddTask({ onTaskAdded }) {
-  const [title, setTitle] = useState('');
-  const [description, setDescription] = useState('');
-  const [loading, setLoading] = useState(false);
-  const [error, setError] = useState('');
+type AddTaskProps = {
+  onTaskAdded: () => void;
+};
 
-  const handleSubmit = async (e) => {
+const AddTask: React.FC<AddTaskProps> = ({ onTaskAdded }) => {
+  const [title, setTitle] = useState<string>('');
+  const [description, setDescription] = useState<string>('');
+  const [loading, setLoading] = useState<boolean>(false);
+  const [error, setError] = useState<string>('');
+
+  const handleSubmit = async (e: React.FormEvent<HTMLFormElement>) => {
     e.preventDefault();
     if (!title.trim() || !description.trim()) {
       setError('タイトルと説明は必須です');
@@ -17,7 +22,12 @@ function AddTask({ onTaskAdded }) {
     setLoading(true);
     setError('');
     try {
-      await addTask({ title, description, completed: false });
+      const newTask: NewTask = {
+        title,
+        description,
+        completed: false,
+      };
+      await addTask(newTask);
       setTitle('');
       setDescription('');
       onTaskAdded();
@@ -53,6 +63,6 @@ function AddTask({ onTaskAdded }) {
       {error && <p style={{ color: 'red' }}>{error}</p>}
     </form>
   );
-}
+};
 
 export default AddTask;
