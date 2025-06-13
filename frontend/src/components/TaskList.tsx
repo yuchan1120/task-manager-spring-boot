@@ -1,3 +1,4 @@
+// TaskList.tsx
 import React, { useEffect, useState, useCallback } from 'react';
 import {
   getTasks,
@@ -7,11 +8,18 @@ import {
 } from '../api';
 import AddTask from './AddTask';
 
-function TaskList() {
-  const [tasks, setTasks] = useState([]);
-  const [editingTask, setEditingTask] = useState(null);
-  const [loading, setLoading] = useState(false);
-  const [error, setError] = useState('');
+type Task = {
+  id: number;
+  title: string;
+  description: string;
+  completed: boolean;
+};
+
+const TaskList: React.FC = () => {
+  const [tasks, setTasks] = useState<Task[]>([]);
+  const [editingTask, setEditingTask] = useState<Pick<Task, 'id' | 'title'> | null>(null);
+  const [loading, setLoading] = useState<boolean>(false);
+  const [error, setError] = useState<string>('');
 
   // useCallback でメモ化すると、再レンダリング時の無駄な再定義を防げる
   const fetchTasks = useCallback(() => {
@@ -29,7 +37,7 @@ function TaskList() {
     fetchTasks();
   }, [fetchTasks]);
 
-  const handleToggle = async (id) => {
+  const handleToggle = async (id: number) => {
     try {
       await toggleTask(id);
       fetchTasks();
@@ -38,7 +46,7 @@ function TaskList() {
     }
   };
 
-  const handleDelete = async (id) => {
+  const handleDelete = async (id: number) => {
     try {
       await deleteTask(id);
       fetchTasks();
@@ -47,15 +55,16 @@ function TaskList() {
     }
   };
 
-  const handleEditClick = (task) => {
+  const handleEditClick = (task: Task) => {
     setEditingTask({ id: task.id, title: task.title });
   };
 
-  const handleEditChange = (e) => {
-    setEditingTask(prev => ({ ...prev, title: e.target.value }));
+  const handleEditChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    setEditingTask(prev => prev ? { ...prev, title: e.target.value } : null);
   };
 
-  const handleEditSubmit = async (task) => {
+  const handleEditSubmit = async (task: Task) => {
+    if (!editingTask) return;
     try {
       await updateTask(task.id, { ...task, title: editingTask.title });
       setEditingTask(null);
@@ -113,6 +122,6 @@ function TaskList() {
       )}
     </div>
   );
-}
+};
 
 export default TaskList;
