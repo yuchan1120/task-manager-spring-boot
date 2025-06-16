@@ -60,7 +60,13 @@ const TaskList: React.FC = () => {
   };
 
   const handleEditChange = (e: React.ChangeEvent<HTMLInputElement>) => {
-    setEditingTask(prev => prev ? { ...prev, title: e.target.value } : null);
+    setEditingTask(prev => {
+      if (prev) {
+        return { ...prev, title: e.target.value };
+      } else {
+        return null;
+      }
+    });
   };
 
   const handleEditSubmit = async (task: Task) => {
