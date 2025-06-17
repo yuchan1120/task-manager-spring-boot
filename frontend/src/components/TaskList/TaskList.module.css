@@ -1,0 +1,80 @@
+.checkbox {
+    margin-top: 0.3rem;
+}
+
+.taskContent {
+    flex: 1;
+    display: flex;
+    flex-direction: column;
+    gap: 0.3rem;
+}
+
+.taskTitle {
+    font-size: 1.1rem;
+    font-weight: bold;
+    cursor: pointer;
+}
+
+.taskActions {
+    display: flex;
+    gap: 0.5rem;
+    margin-top: 0.5rem;
+}
+
+.dueDate {
+    font-size: 0.9rem;
+    color: #555;
+}
+
+.filterButtons {
+    display: flex;
+    gap: 0.75rem;
+    margin-bottom: 2rem;
+    /* ← ここで余白を増やす */
+}
+
+.container {
+    display: flex;
+    flex-direction: column;
+    height: 100vh;
+    /* 画面全体を使う */
+    padding: 1rem;
+    box-sizing: border-box;
+}
+
+.fixedForm {
+    flex-shrink: 0;
+    margin-bottom: 1rem;
+}
+
+.scrollArea {
+    flex-grow: 1;
+    overflow-y: auto;
+    padding-right: 0.5rem;
+}
+
+.taskList {
+    display: flex;
+    flex-direction: column;
+    gap: 1rem;
+}
+
+.taskItem {
+    padding: 1rem;
+    border: 1px solid #ddd;
+    border-radius: 8px;
+    background-color: #f9f9f9;
+}
+
+.taskItem.completed {
+    background-color: #e0e0e0;
+    text-decoration: line-through;
+}
+
+.editForm {
+    display: flex;
+    flex-direction: column;
+    max-width: 400px;
+    /* 必要に応じて調整 */
+    gap: 8px;
+}

@@ -1,7 +1,7 @@
 import React from 'react';
 import { render, screen, fireEvent, waitFor } from '@testing-library/react';
 import '@testing-library/jest-dom';
-import TaskList from '../../src/components/TaskList';
+import TaskList from '../../src/components/TaskList/TaskList';
 import * as api from '../../src/api';
 
 // モックデータ
@@ -71,7 +71,7 @@ describe('TaskList', () => {
       });
       render(<TaskList />);
       await waitFor(() => {
-        expect(screen.getByText('未設定')).toBeInTheDocument();
+        expect(screen.getByTestId('due-date-3')).toHaveTextContent(/未設定/);
       });
     });
 

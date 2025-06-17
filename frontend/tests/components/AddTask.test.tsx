@@ -1,7 +1,7 @@
 import React from 'react';
 import { render, screen, fireEvent, waitFor } from '@testing-library/react';
 import '@testing-library/jest-dom';
-import AddTask from '../../src/components/AddTask';
+import AddTask from '../../src/components/AddTask/AddTask';
 import * as api from '../../src/api';
 
 jest.mock('../../src/api');

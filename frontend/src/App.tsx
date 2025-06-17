@@ -1,5 +1,8 @@
 import React from 'react';
-import TaskList from './components/TaskList';
+import TaskList from './components/TaskList/TaskList';
+import './styles/reset.css';
+import './styles/variables.css';
+import './styles/global.css';
 
 function App() {
   return (

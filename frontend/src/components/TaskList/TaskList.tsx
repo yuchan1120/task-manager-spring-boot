@@ -1,7 +1,8 @@
 // TaskList.tsx
 import React, { useEffect, useState, useCallback, useMemo } from 'react';
-import { getTasks, toggleTask, deleteTask, updateTask } from '../api';
-import AddTask from './AddTask';
+import { getTasks, toggleTask, deleteTask, updateTask } from '../../api';
+import AddTask from '../AddTask/AddTask';
+import styles from './TaskList.module.css'
 
 type Task = {
   id: number;
@@ -99,67 +100,86 @@ const TaskList: React.FC = () => {
     return `${date.getFullYear()}/${date.getMonth() + 1}/${date.getDate()}`;
   };
 
-  return (
-    <div>
-      <h2>タスク一覧</h2>
-      <AddTask onTaskAdded={fetchTasks} />
 
-      <div style={{ marginBottom: '1rem' }}>
-        {(['all', 'incomplete', 'completed'] as const).map(type => (
-          <button key={type} onClick={() => setFilter(type)} disabled={filter === type}>
-            {type === 'all' ? 'すべて' : type === 'incomplete' ? '未完了' : '完了済み'}
-          </button>
-        ))}
+  return (
+    <div className={styles.container}>
+      <div className={styles.fixedForm}>
+        <AddTask onTaskAdded={fetchTasks} />
       </div>
 
-      {loading ? (
-        <p>読み込み中...</p>
-      ) : error ? (
-        <p style={{ color: 'red' }}>{error}</p>
-      ) : (
-        <ul>
-          {filteredAndSortedTasks.map(task => (
-            <li key={task.id}>
-              <input
-                type="checkbox"
-                checked={task.completed}
-                onChange={() => handleToggle(task.id)}
-                data-testid={`toggle-checkbox-${task.id}`}
-              />
-              {editingTask?.id === task.id ? (
-                <>
-                  <input
-                    type="text"
-                    value={editingTask.title}
-                    onChange={handleEditChange}
-                    autoFocus
-                  />
-                  <input
-                    type="date"
-                    value={editingTask.dueDate?.split('T')[0] || ''}
-                    onChange={handleDueDateChange}
-                  />
-                  <button onClick={() => handleEditSubmit(task)}>保存</button>
-                  <button onClick={() => setEditingTask(null)}>キャンセル</button>
-                </>
-              ) : (
-                <strong onClick={() => handleEditClick(task)} style={{ cursor: 'pointer' }}>
-                  {task.title}
-                </strong>
-              )}
-              {' - '}{task.description}
-              {' - 期限: '}
-              <span data-testid={`due-date-${task.id}`}>
-                {formatDate(task.dueDate)}
-              </span>
-              {' ['}{task.completed ? '完了' : '未完了'}{'] '}
-              <button data-testid={`delete-button-${task.id}`} onClick={() => handleDelete(task.id)}>
-                削除
-              </button>
-            </li>
+      <div className={styles.scrollArea}>
+        <div className={styles.filterButtons}>
+          {(['all', 'incomplete', 'completed'] as const).map(type => (
+            <button key={type} onClick={() => setFilter(type)} disabled={filter === type}>
+              {type === 'all' ? 'すべて' : type === 'incomplete' ? '未完了' : '完了済み'}
+            </button>
           ))}
-        </ul>
-      )}
+        </div>
+
+        {loading ? (
+          <p>読み込み中...</p>
+        ) : error ? (
+          <p style={{ color: 'red' }}>{error}</p>
+        ) : (
+          <ul className={styles.taskList}>
+            {filteredAndSortedTasks.map(task => (
+              <li key={task.id} className={`${styles.taskItem} ${task.completed ? styles.completed : ''}`}>
+                <input
+                  type="checkbox"
+                  checked={task.completed}
+                  onChange={() => handleToggle(task.id)}
+                  className={styles.checkbox}
+                  data-testid={`toggle-checkbox-${task.id}`}
+                />
+
+                <div className={styles.taskContent}>
+                  {editingTask?.id === task.id ? (
+                    <div className={styles.editForm}>
+                      <input
+                        type="text"
+                        value={editingTask.title}
+                        onChange={handleEditChange}
+                        autoFocus
+                      />
+                      <input
+                        type="date"
+                        value={editingTask.dueDate?.split('T')[0] || ''}
+                        onChange={handleDueDateChange}
+                      />
+                      <div className={styles.taskActions}>
+                        <button onClick={() => handleEditSubmit(task)}>保存</button>
+                        <button onClick={() => setEditingTask(null)}>キャンセル</button>
+                      </div>
+                    </div>
+                  ) : (
+                    <span
+                      className={styles.taskTitle}
+                      onClick={() => handleEditClick(task)}
+                    >
+                      {task.title}
+                    </span>
+                  )}
+
+                  <span>{task.description}</span>
+
+                  <span className={styles.dueDate} data-testid={`due-date-${task.id}`}>
+                    期限: {formatDate(task.dueDate)}
+                  </span>
+
+                  <div className={styles.taskActions}>
+                    <button
+                      data-testid={`delete-button-${task.id}`}
+                      onClick={() => handleDelete(task.id)}
+                    >
+                      削除
+                    </button>
+                  </div>
+                </div>
+              </li>
+            ))}
+          </ul>
+        )}
+      </div>
     </div>
   );
 };

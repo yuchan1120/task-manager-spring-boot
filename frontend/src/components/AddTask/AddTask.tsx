@@ -1,7 +1,8 @@
 // インポート
 import React, { useState } from 'react'; // useState: Reactのフックで、状態（state）を管理します。
-import { addTask } from '../api'; // addTask: タスクを追加するAPI関数。
-import type { NewTask } from '../api'; // NewTask: 新しいタスクの型定義（TypeScriptの型）。
+import { addTask } from '../../api'; // addTask: タスクを追加するAPI関数。
+import type { NewTask } from '../../api'; // NewTask: 新しいタスクの型定義（TypeScriptの型）。
+import styles from './AddTask.module.css'
 
 // Propsの型定義
 type AddTaskProps = {
@@ -54,37 +55,43 @@ const AddTask: React.FC<AddTaskProps> = ({ onTaskAdded }) => {
     }
   };
 
+
   return (
-    // JSX（UI部分）
-    <form onSubmit={handleSubmit}>
-      <label>
-        タイトル:
-        <input
-          type="text"
-          value={title}
-          onChange={(e) => setTitle(e.target.value)}
-        />
-      </label>
-      <label>
-        説明:
-        <input
-          type="text"
-          value={description}
-          onChange={(e) => setDescription(e.target.value)}
-        />
-      </label>
-      <label>
-        期限:
-        <input
-          type="date"
-          value={dueDate}
-          onChange={(e) => setDueDate(e.target.value)}
-        />
-      </label>
-      <button type="submit" disabled={loading}>
+    <form onSubmit={handleSubmit} className={styles.form}>
+      <label htmlFor="title">タイトル</label>
+      <input
+        id="title"
+        type="text"
+        value={title}
+        onChange={(e) => setTitle(e.target.value)}
+        placeholder="タイトル"
+        className={styles.input}
+      />
+
+      <label htmlFor="description">説明</label>
+      <input
+        id="description"
+        type="text"
+        value={description}
+        onChange={(e) => setDescription(e.target.value)}
+        placeholder="説明"
+        className={styles.input}
+      />
+
+      <label htmlFor="dueDate">期限</label>
+      <input
+        id="dueDate"
+        type="date"
+        value={dueDate}
+        onChange={(e) => setDueDate(e.target.value)}
+        className={styles.input}
+      />
+
+      <button type="submit" disabled={loading} className={styles.button}>
         {loading ? '追加中...' : '追加'}
       </button>
-      {error && <p style={{ color: 'red' }}>{error}</p>}
+
+      {error && <p className={styles.error}>{error}</p>}
     </form>
   );
 };
