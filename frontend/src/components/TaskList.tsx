@@ -13,11 +13,12 @@ type Task = {
   title: string;
   description: string;
   completed: boolean;
+  dueDate?: string; // ISO形式の文字列（例: "2025-06-20"）
 };
 
 const TaskList: React.FC = () => {
   const [tasks, setTasks] = useState<Task[]>([]);
-  const [editingTask, setEditingTask] = useState<Pick<Task, 'id' | 'title'> | null>(null);
+  const [editingTask, setEditingTask] = useState<Pick<Task, 'id' | 'title' | 'dueDate'> | null>(null);
   const [loading, setLoading] = useState<boolean>(false);
   const [error, setError] = useState<string>('');
   const [filter, setFilter] = useState<'all' | 'completed' | 'incomplete'>('all'); // フィルター状態
@@ -44,6 +45,12 @@ const TaskList: React.FC = () => {
     return true;
   });
 
+  const sortedTasks = [...filteredTasks].sort((a, b) => {
+    if (!a.dueDate) return 1;
+    if (!b.dueDate) return -1;
+    return new Date(a.dueDate).getTime() - new Date(b.dueDate).getTime();
+  });
+
   const handleToggle = async (id: number) => {
     try {
       await toggleTask(id);
@@ -63,23 +70,26 @@ const TaskList: React.FC = () => {
   };
 
   const handleEditClick = (task: Task) => {
-    setEditingTask({ id: task.id, title: task.title });
+    setEditingTask({ id: task.id, title: task.title, dueDate: task.dueDate });
   };
 
   const handleEditChange = (e: React.ChangeEvent<HTMLInputElement>) => {
-    setEditingTask(prev => {
-      if (prev) {
-        return { ...prev, title: e.target.value };
-      } else {
-        return null;
-      }
-    });
+    setEditingTask(prev => prev ? { ...prev, title: e.target.value } : prev);
+  };
+
+  const handleDueDateChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const newDate = e.target.value;
+    setEditingTask(prev => prev ? { ...prev, dueDate: newDate } : prev);
   };
 
   const handleEditSubmit = async (task: Task) => {
     if (!editingTask) return;
     try {
-      await updateTask(task.id, { ...task, title: editingTask.title });
+      await updateTask(task.id, {
+        ...task,
+        title: editingTask.title,
+        dueDate: editingTask.dueDate
+      });
       setEditingTask(null);
       fetchTasks();
     } catch (err) {
@@ -105,12 +115,13 @@ const TaskList: React.FC = () => {
         <p style={{ color: 'red' }}>{error}</p>
       ) : (
         <ul>
-          {filteredTasks.map(task => (
+          {sortedTasks.map(task => (
             <li key={task.id}>
               <input
                 type="checkbox"
                 checked={task.completed}
                 onChange={() => handleToggle(task.id)}
+                data-testid={`toggle-checkbox-${task.id}`}
               />
               {editingTask?.id === task.id ? (
                 <>
@@ -118,13 +129,14 @@ const TaskList: React.FC = () => {
                     type="text"
                     value={editingTask.title}
                     onChange={handleEditChange}
-                    onBlur={() => handleEditSubmit(task)}
-                    onKeyDown={(e) => {
-                      if (e.key === 'Enter') handleEditSubmit(task);
-                      if (e.key === 'Escape') setEditingTask(null);
-                    }}
                     autoFocus
                   />
+                  <input
+                    type="date"
+                    value={editingTask?.dueDate ? editingTask.dueDate.split('T')[0] : ''}
+                    onChange={handleDueDateChange}
+                  />
+                  <button onClick={() => handleEditSubmit(task)}>保存</button>
                   <button onClick={() => setEditingTask(null)}>キャンセル</button>
                 </>
               ) : (
@@ -135,8 +147,15 @@ const TaskList: React.FC = () => {
                   {task.title}
                 </strong>
               )}
-              {' - '}{task.description} [{task.completed ? '完了' : '未完了'}]
-              <button onClick={() => handleDelete(task.id)}>削除</button>
+              {' - '}{task.description}
+              {' - 期限: '}
+                <span>{task.dueDate ? new Date(task.dueDate).getFullYear() : '未設定'}</span>/
+                <span>{task.dueDate ? new Date(task.dueDate).getMonth() + 1 : ''}</span>/
+                <span>{task.dueDate ? new Date(task.dueDate).getDate() : ''}</span>
+              [{task.completed ? '完了' : '未完了'}]
+              <button data-testid={`delete-button-${task.id}`} onClick={() => handleDelete(task.id)}>
+                削除
+              </button>
             </li>
           ))}
         </ul>

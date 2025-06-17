@@ -1,284 +1,252 @@
 import React from 'react';
-import { fireEvent, render, screen, waitFor } from '@testing-library/react';
+import { render, screen, fireEvent, waitFor } from '@testing-library/react';
 import '@testing-library/jest-dom';
 import TaskList from '../../src/components/TaskList';
 import * as api from '../../src/api';
-import { AxiosHeaders, AxiosResponse } from 'axios';
 
-jest.mock('../../src/api');
-
+// モックデータ
 const mockTasks = [
-  { id: 1, title: 'タスク1', description: '説明1', completed: false },
-  { id: 2, title: 'タスク2', description: '説明2', completed: true },
+  { id: 1, title: 'Task A', description: 'Desc A', completed: false, dueDate: '2025-06-20' },
+  { id: 2, title: 'Task B', description: 'Desc B', completed: true, dueDate: '2025-06-18' },
 ];
+
+// API関数のモック
+jest.mock('../../src/api');
 
 describe('TaskList', () => {
   beforeEach(() => {
     jest.clearAllMocks();
+    (api.getTasks as jest.Mock).mockResolvedValue({ data: mockTasks });
   });
 
-  test('初期表示: タスク一覧が表示される', async () => {
-    (api.getTasks as jest.Mock).mockResolvedValue({ data: mockTasks });
+  describe('タスク一覧の表示とフィルター機能', () => {
+    test('タスク一覧が表示される', async () => {
+      render(<TaskList />);
+      expect(screen.getByText('読み込み中...')).toBeInTheDocument();
 
-    render(<TaskList />);
+      await waitFor(() => {
+        expect(screen.getByText('Task A')).toBeInTheDocument();
+        expect(screen.getByText('Task B')).toBeInTheDocument();
+      });
+    });
 
-    expect(screen.getByText('読み込み中...')).toBeInTheDocument();
+    test('フィルター機能が動作する', async () => {
+      render(<TaskList />);
+      await waitFor(() => screen.getByText('Task A'));
 
-    await waitFor(() => {
-      expect(screen.getByText('タスク1')).toBeInTheDocument();
-      expect(screen.getByText('タスク2')).toBeInTheDocument();
+      fireEvent.click(screen.getByText('未完了'));
+      expect(screen.queryByText('Task B')).not.toBeInTheDocument();
+      expect(screen.getByText('Task A')).toBeInTheDocument();
+
+      fireEvent.click(screen.getByText('完了済み'));
+      expect(screen.queryByText('Task A')).not.toBeInTheDocument();
+      expect(screen.getByText('Task B')).toBeInTheDocument();
+    });
+
+    test('フィルター: 「すべて」ボタンをクリックすると全タスクが表示される', async () => {
+      (api.getTasks as jest.Mock).mockResolvedValue({ data: mockTasks });
+
+      render(<TaskList />);
+      await waitFor(() => {
+        expect(screen.getByText('Task A')).toBeInTheDocument();
+        expect(screen.getByText('Task B')).toBeInTheDocument();
+      });
+
+      // 「未完了」に切り替えてから「すべて」に戻すことで動作を明確にする
+      fireEvent.click(screen.getByText('未完了'));
+      expect(screen.getByText('Task A')).toBeInTheDocument();
+      expect(screen.queryByText('Task B')).not.toBeInTheDocument();
+
+      // 「すべて」に戻す
+      fireEvent.click(screen.getByText('すべて'));
+
+      // 両方のタスクが表示されることを確認
+      expect(screen.getByText('Task A')).toBeInTheDocument();
+      expect(screen.getByText('Task B')).toBeInTheDocument();
+    });
+
+    test('期限が未設定のタスクが「未設定」と表示される', async () => {
+      (api.getTasks as jest.Mock).mockResolvedValue({
+        data: [{ id: 3, title: 'No Due', description: 'No date', completed: false }]
+      });
+      render(<TaskList />);
+      await waitFor(() => {
+        expect(screen.getByText('未設定')).toBeInTheDocument();
+      });
+    });
+
+  });
+
+  describe('タスクの操作', () => {
+    test('完了状態の切り替えができる', async () => {
+      (api.toggleTask as jest.Mock).mockResolvedValue({});
+      render(<TaskList />);
+      await waitFor(() => screen.getByText('Task A'));
+
+      const checkbox = screen.getByTestId('toggle-checkbox-1');
+      fireEvent.click(checkbox);
+
+      await waitFor(() => {
+        expect(api.toggleTask).toHaveBeenCalledWith(1);
+      });
+    });
+
+    test('完了状態の切り替えに失敗した場合、エラーログが出力される', async () => {
+      const consoleErrorSpy = jest.spyOn(console, 'error').mockImplementation(() => { });
+      (api.toggleTask as jest.Mock).mockRejectedValue(new Error('Toggle failed'));
+
+      render(<TaskList />);
+      const checkbox = await screen.findByTestId('toggle-checkbox-1');
+      fireEvent.click(checkbox);
+
+      await waitFor(() => {
+        expect(consoleErrorSpy).toHaveBeenCalledWith(
+          '完了状態の切り替えに失敗しました:',
+          expect.any(Error)
+        );
+      });
+
+      consoleErrorSpy.mockRestore();
+    });
+
+    test('タスクの削除ができる', async () => {
+      (api.deleteTask as jest.Mock).mockResolvedValue({});
+      render(<TaskList />);
+      await waitFor(() => screen.getByText('Task A'));
+
+      const deleteButton = screen.getByTestId('delete-button-1');
+      fireEvent.click(deleteButton);
+
+      await waitFor(() => {
+        expect(api.deleteTask).toHaveBeenCalledWith(1);
+      });
+    });
+
+    test('タスクの削除に失敗した場合、エラーログが出力される', async () => {
+      const consoleErrorSpy = jest.spyOn(console, 'error').mockImplementation(() => { });
+      (api.deleteTask as jest.Mock).mockRejectedValue(new Error('Delete failed'));
+
+      render(<TaskList />);
+      const deleteButton = await screen.findByTestId('delete-button-1');
+      fireEvent.click(deleteButton);
+
+      await waitFor(() => {
+        expect(consoleErrorSpy).toHaveBeenCalledWith(
+          '削除に失敗しました:',
+          expect.any(Error)
+        );
+      });
+
+      consoleErrorSpy.mockRestore();
+    });
+
+    test('タスクの編集ができる', async () => {
+      (api.updateTask as jest.Mock).mockResolvedValue({});
+      render(<TaskList />);
+      await waitFor(() => screen.getByText('Task A'));
+
+      fireEvent.click(screen.getByText('Task A'));
+      const input = screen.getByDisplayValue('Task A');
+      fireEvent.change(input, { target: { value: 'Updated Task A' } });
+
+      const dateInput = screen.getByDisplayValue('2025-06-20');
+      fireEvent.change(dateInput, { target: { value: '2025-06-25' } });
+
+      const saveButton = screen.getByText('保存');
+      fireEvent.click(saveButton);
+
+      await waitFor(() =>
+        expect(api.updateTask).toHaveBeenCalledWith(1, {
+          id: 1,
+          title: 'Updated Task A',
+          description: 'Desc A',
+          completed: false,
+          dueDate: '2025-06-25',
+        })
+      );
+    });
+
+    test('編集をキャンセルする', async () => {
+      render(<TaskList />);
+      const title = await screen.findByText('Task A');
+      fireEvent.click(title);
+
+      const cancelButton = screen.getByText('キャンセル');
+      fireEvent.click(cancelButton);
+
+      expect(screen.queryByDisplayValue('Task A')).not.toBeInTheDocument();
+    });
+
+    test('編集に失敗した場合、エラーログが出力される', async () => {
+      const consoleErrorSpy = jest.spyOn(console, 'error').mockImplementation(() => { });
+      (api.updateTask as jest.Mock).mockRejectedValue(new Error('Update failed'));
+
+      render(<TaskList />);
+      const title = await screen.findByText('Task A');
+      fireEvent.click(title);
+
+      const input = screen.getByDisplayValue('Task A');
+      fireEvent.change(input, { target: { value: 'Failed Update' } });
+
+      const saveButton = screen.getByText('保存');
+      fireEvent.click(saveButton);
+
+      await waitFor(() => {
+        expect(consoleErrorSpy).toHaveBeenCalledWith(
+          '編集に失敗しました:',
+          expect.any(Error)
+        );
+      });
+
+      consoleErrorSpy.mockRestore();
     });
   });
 
-  // 28-33
-  test('初期表示: エラー時にエラーメッセージが表示される', async () => {
-    (api.getTasks as jest.Mock).mockRejectedValue(new Error('API Error'));
+  describe('期限の表示とエラーハンドリング', () => {
+    test('期限の表示を確認する', async () => {
+      render(<TaskList />);
+      const years = await screen.findAllByText('2025');
+      const months = await screen.findAllByText('6');
+      const days = await screen.findAllByText(/^(18|20)$/); // 18日と20日がある
 
-    render(<TaskList />);
+      expect(years.length).toBeGreaterThanOrEqual(2);
+      expect(months.length).toBeGreaterThanOrEqual(2);
+      expect(days.map(d => d.textContent)).toEqual(expect.arrayContaining(['18', '20']));
+    });
 
-    await waitFor(() => {
-      expect(screen.getByText('タスクの取得に失敗しました')).toBeInTheDocument();
+    test('APIエラー時にエラーメッセージが表示される', async () => {
+      (api.getTasks as jest.Mock).mockRejectedValue(new Error('API Error'));
+      render(<TaskList />);
+      await waitFor(() => {
+        expect(screen.getByText('タスクの取得に失敗しました')).toBeInTheDocument();
+      });
     });
   });
 
-  // 43
-  test('タスクのトグル: チェックボックスをクリックすると toggleTask が呼ばれる', async () => {
-    (api.getTasks as jest.Mock).mockResolvedValue({ data: mockTasks });
-    (api.toggleTask as jest.Mock).mockResolvedValue({});
+  describe('編集モードの期限入力フィールド', () => {
+    test('editingTask.dueDate が存在する場合、日付入力に値が表示される', async () => {
+      render(<TaskList />);
+      const title = await screen.findByText('Task A');
+      fireEvent.click(title);
 
-    render(<TaskList />);
-    await waitFor(() => screen.getByText('タスク1'));
-
-    const checkbox = screen.getAllByRole('checkbox')[0];
-    fireEvent.click(checkbox);
-
-    await waitFor(() => {
-      expect(api.toggleTask).toHaveBeenCalledWith(1);
-    });
-  });
-
-  // 45
-  test('タスクのトグル失敗時にエラーが出力される', async () => {
-    (api.getTasks as jest.Mock).mockResolvedValue({ data: mockTasks });
-    (api.toggleTask as jest.Mock).mockRejectedValue(new Error('Toggle Error'));
-
-    render(<TaskList />);
-    await waitFor(() => screen.getByText('タスク1'));
-
-    const checkbox = screen.getAllByRole('checkbox')[0];
-    fireEvent.click(checkbox);
-
-    await waitFor(() => {
-      expect(api.toggleTask).toHaveBeenCalled();
-    });
-  });
-
-  // 52
-  test('タスクの削除: 削除ボタンを押すと deleteTask が呼ばれる', async () => {
-    (api.getTasks as jest.Mock).mockResolvedValue({ data: mockTasks });
-    (api.deleteTask as jest.Mock).mockResolvedValue({});
-
-    render(<TaskList />);
-    await waitFor(() => screen.getByText('タスク1'));
-
-    const deleteButton = screen.getAllByText('削除')[0];
-    fireEvent.click(deleteButton);
-
-    await waitFor(() => {
-      expect(api.deleteTask).toHaveBeenCalledWith(1);
-    });
-  });
-
-  // 54
-  test('タスクの削除失敗時にエラーが出力される', async () => {
-    (api.getTasks as jest.Mock).mockResolvedValue({ data: mockTasks });
-    (api.deleteTask as jest.Mock).mockRejectedValue(new Error('Delete Error'));
-
-    render(<TaskList />);
-    await waitFor(() => screen.getByText('タスク1'));
-
-    const deleteButton = screen.getAllByText('削除')[0];
-    fireEvent.click(deleteButton);
-
-    await waitFor(() => {
-      expect(api.deleteTask).toHaveBeenCalled();
-    });
-  });
-
-  // 59
-  test('タスクの編集: タイトルをクリックすると編集モードになる', async () => {
-    (api.getTasks as jest.Mock).mockResolvedValue({ data: mockTasks });
-
-    render(<TaskList />);
-    await waitFor(() => screen.getByText('タスク1'));
-
-    fireEvent.click(screen.getByText('タスク1'));
-
-    expect(screen.getByDisplayValue('タスク1')).toBeInTheDocument();
-  });
-
-  // 71
-  test('タスクの編集: Enter で更新される', async () => {
-    (api.getTasks as jest.Mock).mockResolvedValue({ data: mockTasks });
-    (api.updateTask as jest.Mock).mockResolvedValue({});
-
-    render(<TaskList />);
-    await waitFor(() => screen.getByText('タスク1'));
-
-    fireEvent.click(screen.getByText('タスク1'));
-
-    const input = screen.getByDisplayValue('タスク1');
-    fireEvent.change(input, { target: { value: '更新後タスク' } });
-    fireEvent.keyDown(input, { key: 'Enter', code: 'Enter' });
-
-    await waitFor(() => {
-      expect(api.updateTask).toHaveBeenCalledWith(1, expect.objectContaining({ title: '更新後タスク' }));
-    });
-  });
-
-  // 103
-  test('タスクの編集: Escape でキャンセルされる', async () => {
-    (api.getTasks as jest.Mock).mockResolvedValue({ data: mockTasks });
-
-    render(<TaskList />);
-    await waitFor(() => screen.getByText('タスク1'));
-
-    fireEvent.click(screen.getByText('タスク1'));
-
-    const input = screen.getByDisplayValue('タスク1');
-    fireEvent.keyDown(input, { key: 'Escape', code: 'Escape' });
-
-    expect(screen.queryByDisplayValue('タスク1')).not.toBeInTheDocument();
-  });
-
-  test('入力欄の変更で editingTask.title が更新される', async () => {
-    render(<TaskList />);
-
-    // タスクが表示されるまで待つ
-    await waitFor(() => {
-      expect(screen.getByText('タスク1')).toBeInTheDocument();
+      const dateInput = screen.getByDisplayValue('2025-06-20');
+      expect(dateInput).toBeInTheDocument();
     });
 
-    // タイトルをクリックして編集モードに入る
-    fireEvent.click(screen.getByText('タスク1'));
+    test('editingTask.dueDate が存在しない場合、日付入力が空になる', async () => {
+      (api.getTasks as jest.Mock).mockResolvedValue({
+        data: [{ id: 3, title: 'No Due', description: 'No date', completed: false }]
+      });
 
-    // 編集用の input が表示される
-    const input = screen.getByDisplayValue('タスク1');
-    expect(input).toBeInTheDocument();
+      render(<TaskList />);
+      const title = await screen.findByText('No Due');
+      fireEvent.click(title);
 
-    // input に新しいタイトルを入力
-    fireEvent.change(input, { target: { value: '新しいタイトル' } });
+      // type="date" の input をすべて取得し、空のものを探す
+      const dateInputs = screen.getAllByDisplayValue('');
+      const dateInput = dateInputs.find(input => input.getAttribute('type') === 'date');
 
-    // 入力欄の値が更新されているか確認
-    expect(screen.getByDisplayValue('新しいタイトル')).toBeInTheDocument();
-  });
-
-  // 107
-  test('編集モードからキャンセルすると通常表示に戻る', async () => {
-    render(<TaskList />);
-
-    // タスクが表示されるまで待つ
-    await waitFor(() => {
-      expect(screen.getByText('タスク1')).toBeInTheDocument();
+      expect(dateInput).toBeInTheDocument();
     });
-
-    // タイトルをクリックして編集モードに入る
-    fireEvent.click(screen.getByText('タスク1'));
-
-    // 編集フィールドが表示される
-    const input = screen.getByDisplayValue('タスク1');
-    expect(input).toBeInTheDocument();
-
-    // キャンセルボタンをクリック
-    fireEvent.click(screen.getByText('キャンセル'));
-
-    // 編集フィールドが消えて、通常のタイトル表示に戻る
-    await waitFor(() => {
-      expect(screen.queryByDisplayValue('タスク1')).not.toBeInTheDocument();
-      expect(screen.getByText('タスク1')).toBeInTheDocument();
-    });
-  });
-
-  // 73
-  test('タスクの編集失敗時にエラーが出力される', async () => {
-    (api.getTasks as jest.Mock).mockResolvedValue({ data: mockTasks });
-    (api.updateTask as jest.Mock).mockRejectedValue(new Error('Update Error'));
-
-    render(<TaskList />);
-    await waitFor(() => screen.getByText('タスク1'));
-
-    fireEvent.click(screen.getByText('タスク1'));
-    const input = screen.getByDisplayValue('タスク1');
-    fireEvent.change(input, { target: { value: '編集失敗' } });
-    fireEvent.keyDown(input, { key: 'Enter', code: 'Enter' });
-
-    await waitFor(() => {
-      expect(api.updateTask).toHaveBeenCalled();
-    });
-  });
-
-  // 100
-  test('編集中にフォーカスが外れると更新される', async () => {
-    (api.getTasks as jest.Mock).mockResolvedValue({ data: mockTasks });
-    (api.updateTask as jest.Mock).mockResolvedValue({});
-
-    render(<TaskList />);
-    await waitFor(() => screen.getByText('タスク1'));
-
-    fireEvent.click(screen.getByText('タスク1'));
-    const input = screen.getByDisplayValue('タスク1');
-    fireEvent.change(input, { target: { value: 'フォーカス外れ' } });
-    fireEvent.blur(input);
-
-    await waitFor(() => {
-      expect(api.updateTask).toHaveBeenCalledWith(1, expect.objectContaining({ title: 'フォーカス外れ' }));
-    });
-  });
-
-  test('フィルター: 「すべて」ボタンをクリックすると全タスクが表示される', async () => {
-    (api.getTasks as jest.Mock).mockResolvedValue({ data: mockTasks });
-
-    render(<TaskList />);
-    await waitFor(() => {
-      expect(screen.getByText('タスク1')).toBeInTheDocument();
-      expect(screen.getByText('タスク2')).toBeInTheDocument();
-    });
-
-    // 「未完了」に切り替えてから「すべて」に戻すことで動作を明確にする
-    fireEvent.click(screen.getByText('未完了'));
-    expect(screen.getByText('タスク1')).toBeInTheDocument();
-    expect(screen.queryByText('タスク2')).not.toBeInTheDocument();
-
-    // 「すべて」に戻す
-    fireEvent.click(screen.getByText('すべて'));
-
-    // 両方のタスクが表示されることを確認
-    expect(screen.getByText('タスク1')).toBeInTheDocument();
-    expect(screen.getByText('タスク2')).toBeInTheDocument();
-  });
-
-
-  test('フィルター: 「未完了」で未完了タスクのみ表示される', async () => {
-    (api.getTasks as jest.Mock).mockResolvedValue({ data: mockTasks });
-
-    render(<TaskList />);
-    await waitFor(() => screen.getByText('タスク1'));
-
-    fireEvent.click(screen.getByText('未完了'));
-
-    expect(screen.getByText('タスク1')).toBeInTheDocument();
-    expect(screen.queryByText('タスク2')).not.toBeInTheDocument();
-  });
-
-  test('フィルター: 「完了済み」で完了タスクのみ表示される', async () => {
-    (api.getTasks as jest.Mock).mockResolvedValue({ data: mockTasks });
-
-    render(<TaskList />);
-    await waitFor(() => screen.getByText('タスク2'));
-
-    fireEvent.click(screen.getByText('完了済み'));
-
-    expect(screen.getByText('タスク2')).toBeInTheDocument();
-    expect(screen.queryByText('タスク1')).not.toBeInTheDocument();
   });
 });
