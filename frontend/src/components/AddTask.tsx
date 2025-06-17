@@ -1,19 +1,27 @@
-import React, { useState } from 'react';
-import { addTask } from '../api';
-import type { NewTask } from '../api';
+// インポート
+import React, { useState } from 'react'; // useState: Reactのフックで、状態（state）を管理します。
+import { addTask } from '../api'; // addTask: タスクを追加するAPI関数。
+import type { NewTask } from '../api'; // NewTask: 新しいタスクの型定義（TypeScriptの型）。
 
+// Propsの型定義
 type AddTaskProps = {
-  onTaskAdded: () => void;
+  onTaskAdded: () => void; // onTaskAdded: タスク追加後に呼び出されるコールバック関数（親コンポーネントに通知するため）。
 };
 
+// コンポーネント本体
+// React.FC<AddTaskProps>: 関数コンポーネントで、AddTaskProps 型のpropsを受け取る。
 const AddTask: React.FC<AddTaskProps> = ({ onTaskAdded }) => {
+  // 状態管理
   const [title, setTitle] = useState<string>('');
   const [description, setDescription] = useState<string>('');
   const [loading, setLoading] = useState<boolean>(false);
   const [error, setError] = useState<string>('');
 
+  // フォーム送信処理
   const handleSubmit = async (e: React.FormEvent<HTMLFormElement>) => {
+    // フォーム送信後にページがリロードされてしまい、入力内容が消えたり、Reactの状態がリセットされることを防ぐ
     e.preventDefault();
+    // 入力チェック
     if (!title.trim() || !description.trim()) {
       setError('タイトルと説明は必須です');
       return;
@@ -27,11 +35,15 @@ const AddTask: React.FC<AddTaskProps> = ({ onTaskAdded }) => {
         description,
         completed: false,
       };
+      // API呼び出し
       await addTask(newTask);
+      // フォームをリセット
       setTitle('');
       setDescription('');
+      // 親に通知
       onTaskAdded();
     } catch (err) {
+      // エラー処理
       setError('タスクの追加に失敗しました');
       console.error(err);
     } finally {
@@ -40,6 +52,7 @@ const AddTask: React.FC<AddTaskProps> = ({ onTaskAdded }) => {
   };
 
   return (
+    // JSX（UI部分）
     <form onSubmit={handleSubmit}>
       <label>
         タイトル:
