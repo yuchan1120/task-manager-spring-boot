@@ -234,4 +234,51 @@ describe('TaskList', () => {
       expect(api.updateTask).toHaveBeenCalledWith(1, expect.objectContaining({ title: 'フォーカス外れ' }));
     });
   });
+
+  test('フィルター: 「すべて」ボタンをクリックすると全タスクが表示される', async () => {
+    (api.getTasks as jest.Mock).mockResolvedValue({ data: mockTasks });
+
+    render(<TaskList />);
+    await waitFor(() => {
+      expect(screen.getByText('タスク1')).toBeInTheDocument();
+      expect(screen.getByText('タスク2')).toBeInTheDocument();
+    });
+
+    // 「未完了」に切り替えてから「すべて」に戻すことで動作を明確にする
+    fireEvent.click(screen.getByText('未完了'));
+    expect(screen.getByText('タスク1')).toBeInTheDocument();
+    expect(screen.queryByText('タスク2')).not.toBeInTheDocument();
+
+    // 「すべて」に戻す
+    fireEvent.click(screen.getByText('すべて'));
+
+    // 両方のタスクが表示されることを確認
+    expect(screen.getByText('タスク1')).toBeInTheDocument();
+    expect(screen.getByText('タスク2')).toBeInTheDocument();
+  });
+
+
+  test('フィルター: 「未完了」で未完了タスクのみ表示される', async () => {
+    (api.getTasks as jest.Mock).mockResolvedValue({ data: mockTasks });
+
+    render(<TaskList />);
+    await waitFor(() => screen.getByText('タスク1'));
+
+    fireEvent.click(screen.getByText('未完了'));
+
+    expect(screen.getByText('タスク1')).toBeInTheDocument();
+    expect(screen.queryByText('タスク2')).not.toBeInTheDocument();
+  });
+
+  test('フィルター: 「完了済み」で完了タスクのみ表示される', async () => {
+    (api.getTasks as jest.Mock).mockResolvedValue({ data: mockTasks });
+
+    render(<TaskList />);
+    await waitFor(() => screen.getByText('タスク2'));
+
+    fireEvent.click(screen.getByText('完了済み'));
+
+    expect(screen.getByText('タスク2')).toBeInTheDocument();
+    expect(screen.queryByText('タスク1')).not.toBeInTheDocument();
+  });
 });

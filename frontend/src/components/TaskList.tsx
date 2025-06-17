@@ -20,6 +20,7 @@ const TaskList: React.FC = () => {
   const [editingTask, setEditingTask] = useState<Pick<Task, 'id' | 'title'> | null>(null);
   const [loading, setLoading] = useState<boolean>(false);
   const [error, setError] = useState<string>('');
+  const [filter, setFilter] = useState<'all' | 'completed' | 'incomplete'>('all'); // フィルター状態
 
   // useCallback でメモ化すると、再レンダリング時の無駄な再定義を防げる
   const fetchTasks = useCallback(() => {
@@ -36,6 +37,12 @@ const TaskList: React.FC = () => {
   useEffect(() => {
     fetchTasks();
   }, [fetchTasks]);
+
+  const filteredTasks = tasks.filter(task => {
+    if (filter === 'completed') return task.completed;
+    if (filter === 'incomplete') return !task.completed;
+    return true;
+  });
 
   const handleToggle = async (id: number) => {
     try {
@@ -84,13 +91,21 @@ const TaskList: React.FC = () => {
     <div>
       <h2>タスク一覧</h2>
       <AddTask onTaskAdded={fetchTasks} />
+
+      {/* フィルターボタン */}
+      <div style={{ marginBottom: '1rem' }}>
+        <button onClick={() => setFilter('all')} disabled={filter === 'all'}>すべて</button>
+        <button onClick={() => setFilter('incomplete')} disabled={filter === 'incomplete'}>未完了</button>
+        <button onClick={() => setFilter('completed')} disabled={filter === 'completed'}>完了済み</button>
+      </div>
+
       {loading ? (
         <p>読み込み中...</p>
       ) : error ? (
         <p style={{ color: 'red' }}>{error}</p>
       ) : (
         <ul>
-          {tasks.map(task => (
+          {filteredTasks.map(task => (
             <li key={task.id}>
               <input
                 type="checkbox"
