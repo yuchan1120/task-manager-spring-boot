@@ -5,6 +5,9 @@ export default {
     '^.+\\.(ts|tsx)$': 'ts-jest',
     '^.+\\.jsx?$': 'babel-jest',
   },
+  transformIgnorePatterns: [
+    '/node_modules/(?!(axios)/)', // axios をトランスパイル対象に
+  ],
   setupFilesAfterEnv: ['<rootDir>/jest.setup.js'],
   moduleFileExtensions: ['ts', 'tsx', 'js', 'jsx', 'json', 'node'],
   collectCoverage: true,
@@ -15,7 +18,6 @@ export default {
       functions: 100,
       lines: 90
     }
-
   },
   testMatch: [
     '**/src/**/__tests__/**/*.[jt]s?(x)',
