@@ -15,5 +15,11 @@ export default {
       functions: 100,
       lines: 90
     }
-  }
+
+  },
+  testMatch: [
+    '**/src/**/__tests__/**/*.[jt]s?(x)',
+    '**/src/**/*.{spec,test}.[jt]s?(x)',
+    '**/tests/**/*.{spec,test}.[jt]s?(x)'
+  ]
 };
