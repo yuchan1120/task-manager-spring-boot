@@ -1,11 +1,6 @@
 // TaskList.tsx
-import React, { useEffect, useState, useCallback } from 'react';
-import {
-  getTasks,
-  toggleTask,
-  deleteTask,
-  updateTask
-} from '../api';
+import React, { useEffect, useState, useCallback, useMemo } from 'react';
+import { getTasks, toggleTask, deleteTask, updateTask } from '../api';
 import AddTask from './AddTask';
 
 type Task = {
@@ -27,7 +22,7 @@ const TaskList: React.FC = () => {
   const fetchTasks = useCallback(() => {
     setLoading(true);
     getTasks()
-      .then(response => setTasks(response.data))
+      .then(res => setTasks(res.data))
       .catch(err => {
         console.error('タスクの取得に失敗しました:', err);
         setError('タスクの取得に失敗しました');
@@ -39,35 +34,37 @@ const TaskList: React.FC = () => {
     fetchTasks();
   }, [fetchTasks]);
 
-  const filteredTasks = tasks.filter(task => {
-    if (filter === 'completed') return task.completed;
-    if (filter === 'incomplete') return !task.completed;
-    return true;
-  });
+  const filteredAndSortedTasks = useMemo(() => {
+    const filtered = tasks.filter(task => {
+      if (filter === 'completed') return task.completed;
+      if (filter === 'incomplete') return !task.completed;
+      return true;
+    });
 
-  const sortedTasks = [...filteredTasks].sort((a, b) => {
-    if (!a.dueDate) return 1;
-    if (!b.dueDate) return -1;
-    return new Date(a.dueDate).getTime() - new Date(b.dueDate).getTime();
-  });
+    return filtered.sort((a, b) => {
+      if (!a.dueDate) return 1;
+      if (!b.dueDate) return -1;
+      return new Date(a.dueDate).getTime() - new Date(b.dueDate).getTime();
+    });
+  }, [tasks, filter]);
 
-  const handleToggle = async (id: number) => {
+  const handleToggle = useCallback(async (id: number) => {
     try {
       await toggleTask(id);
       fetchTasks();
     } catch (err) {
       console.error('完了状態の切り替えに失敗しました:', err);
     }
-  };
+  }, [fetchTasks]);
 
-  const handleDelete = async (id: number) => {
+  const handleDelete = useCallback(async (id: number) => {
     try {
       await deleteTask(id);
       fetchTasks();
     } catch (err) {
       console.error('削除に失敗しました:', err);
     }
-  };
+  }, [fetchTasks]);
 
   const handleEditClick = (task: Task) => {
     setEditingTask({ id: task.id, title: task.title, dueDate: task.dueDate });
@@ -78,8 +75,7 @@ const TaskList: React.FC = () => {
   };
 
   const handleDueDateChange = (e: React.ChangeEvent<HTMLInputElement>) => {
-    const newDate = e.target.value;
-    setEditingTask(prev => prev ? { ...prev, dueDate: newDate } : prev);
+    setEditingTask(prev => prev ? { ...prev, dueDate: e.target.value } : prev);
   };
 
   const handleEditSubmit = async (task: Task) => {
@@ -97,16 +93,23 @@ const TaskList: React.FC = () => {
     }
   };
 
+  const formatDate = (dateStr?: string) => {
+    if (!dateStr) return '未設定';
+    const date = new Date(dateStr);
+    return `${date.getFullYear()}/${date.getMonth() + 1}/${date.getDate()}`;
+  };
+
   return (
     <div>
       <h2>タスク一覧</h2>
       <AddTask onTaskAdded={fetchTasks} />
 
-      {/* フィルターボタン */}
       <div style={{ marginBottom: '1rem' }}>
-        <button onClick={() => setFilter('all')} disabled={filter === 'all'}>すべて</button>
-        <button onClick={() => setFilter('incomplete')} disabled={filter === 'incomplete'}>未完了</button>
-        <button onClick={() => setFilter('completed')} disabled={filter === 'completed'}>完了済み</button>
+        {(['all', 'incomplete', 'completed'] as const).map(type => (
+          <button key={type} onClick={() => setFilter(type)} disabled={filter === type}>
+            {type === 'all' ? 'すべて' : type === 'incomplete' ? '未完了' : '完了済み'}
+          </button>
+        ))}
       </div>
 
       {loading ? (
@@ -115,7 +118,7 @@ const TaskList: React.FC = () => {
         <p style={{ color: 'red' }}>{error}</p>
       ) : (
         <ul>
-          {sortedTasks.map(task => (
+          {filteredAndSortedTasks.map(task => (
             <li key={task.id}>
               <input
                 type="checkbox"
@@ -133,26 +136,23 @@ const TaskList: React.FC = () => {
                   />
                   <input
                     type="date"
-                    value={editingTask?.dueDate ? editingTask.dueDate.split('T')[0] : ''}
+                    value={editingTask.dueDate?.split('T')[0] || ''}
                     onChange={handleDueDateChange}
                   />
                   <button onClick={() => handleEditSubmit(task)}>保存</button>
                   <button onClick={() => setEditingTask(null)}>キャンセル</button>
                 </>
               ) : (
-                <strong
-                  onClick={() => handleEditClick(task)}
-                  style={{ cursor: 'pointer' }}
-                >
+                <strong onClick={() => handleEditClick(task)} style={{ cursor: 'pointer' }}>
                   {task.title}
                 </strong>
               )}
               {' - '}{task.description}
               {' - 期限: '}
-                <span>{task.dueDate ? new Date(task.dueDate).getFullYear() : '未設定'}</span>/
-                <span>{task.dueDate ? new Date(task.dueDate).getMonth() + 1 : ''}</span>/
-                <span>{task.dueDate ? new Date(task.dueDate).getDate() : ''}</span>
-              [{task.completed ? '完了' : '未完了'}]
+              <span data-testid={`due-date-${task.id}`}>
+                {formatDate(task.dueDate)}
+              </span>
+              {' ['}{task.completed ? '完了' : '未完了'}{'] '}
               <button data-testid={`delete-button-${task.id}`} onClick={() => handleDelete(task.id)}>
                 削除
               </button>

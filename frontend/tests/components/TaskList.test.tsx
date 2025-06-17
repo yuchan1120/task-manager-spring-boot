@@ -205,14 +205,14 @@ describe('TaskList', () => {
   describe('期限の表示とエラーハンドリング', () => {
     test('期限の表示を確認する', async () => {
       render(<TaskList />);
-      const years = await screen.findAllByText('2025');
-      const months = await screen.findAllByText('6');
-      const days = await screen.findAllByText(/^(18|20)$/); // 18日と20日がある
 
-      expect(years.length).toBeGreaterThanOrEqual(2);
-      expect(months.length).toBeGreaterThanOrEqual(2);
-      expect(days.map(d => d.textContent)).toEqual(expect.arrayContaining(['18', '20']));
+      const dueDate1 = await screen.findByTestId('due-date-1');
+      const dueDate2 = await screen.findByTestId('due-date-2');
+
+      expect(dueDate1).toHaveTextContent('2025/6/20');
+      expect(dueDate2).toHaveTextContent('2025/6/18');
     });
+
 
     test('APIエラー時にエラーメッセージが表示される', async () => {
       (api.getTasks as jest.Mock).mockRejectedValue(new Error('API Error'));
