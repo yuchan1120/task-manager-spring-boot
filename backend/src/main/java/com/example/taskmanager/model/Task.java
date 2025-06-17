@@ -1,10 +1,13 @@
 package com.example.taskmanager.model;
 
+import java.time.LocalDate;
+
 import jakarta.persistence.Entity;
 import jakarta.persistence.GeneratedValue;
 import jakarta.persistence.GenerationType;
 import jakarta.persistence.Id;
 import jakarta.persistence.Table;
+import jakarta.persistence.Column;
 
 @Entity
 @Table(name = "tasks")
@@ -17,6 +20,9 @@ public class Task {
     private String title;
     private String description;
     private boolean completed;
+    
+    @Column(name = "due_date")
+    private LocalDate dueDate;
 
     // Getter & Setter（右クリック → Generate → Getter and Setter でもOK）
     public Long getId() { return id; }
@@ -30,4 +36,7 @@ public class Task {
 
     public boolean isCompleted() { return completed; }
     public void setCompleted(boolean completed) { this.completed = completed; }
+    
+    public LocalDate getDueDate() { return dueDate; }
+    public void setDueDate(LocalDate dueDate) { this.dueDate = dueDate; }
 }

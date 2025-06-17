@@ -9,6 +9,7 @@ export type Task = {
   title: string;
   description: string;
   completed: boolean;
+  dueDate?: string; // ISO形式の文字列（例: "2025-06-20"）
 };
 
 // 新規作成時の入力型（id は不要）

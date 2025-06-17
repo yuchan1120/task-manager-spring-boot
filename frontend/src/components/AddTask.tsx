@@ -14,12 +14,13 @@ const AddTask: React.FC<AddTaskProps> = ({ onTaskAdded }) => {
   // 状態管理
   const [title, setTitle] = useState<string>('');
   const [description, setDescription] = useState<string>('');
+  const [dueDate, setDueDate] = useState<string>('');
   const [loading, setLoading] = useState<boolean>(false);
   const [error, setError] = useState<string>('');
 
   // フォーム送信処理
   const handleSubmit = async (e: React.FormEvent<HTMLFormElement>) => {
-    // フォーム送信後にページがリロードされてしまい、入力内容が消えたり、Reactの状態がリセットされることを防ぐ
+    // フォーム送信後にページがリロードされてしまい、入力内容が消えたり、Reactの状態がリセットされ
     e.preventDefault();
     // 入力チェック
     if (!title.trim() || !description.trim()) {
@@ -34,12 +35,14 @@ const AddTask: React.FC<AddTaskProps> = ({ onTaskAdded }) => {
         title,
         description,
         completed: false,
+        dueDate: dueDate || undefined, // 空文字は送らないように
       };
       // API呼び出し
       await addTask(newTask);
       // フォームをリセット
       setTitle('');
       setDescription('');
+      setDueDate('');
       // 親に通知
       onTaskAdded();
     } catch (err) {
@@ -68,6 +71,14 @@ const AddTask: React.FC<AddTaskProps> = ({ onTaskAdded }) => {
           type="text"
           value={description}
           onChange={(e) => setDescription(e.target.value)}
+        />
+      </label>
+      <label>
+        期限:
+        <input
+          type="date"
+          value={dueDate}
+          onChange={(e) => setDueDate(e.target.value)}
         />
       </label>
       <button type="submit" disabled={loading}>

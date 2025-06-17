@@ -61,4 +61,28 @@ describe('AddTask コンポーネント', () => {
             expect(screen.getByText('タスクの追加に失敗しました')).toBeInTheDocument();
         });
     });
+
+    test('期限入力欄が表示され、送信時にAPIに含まれること', async () => {
+        const mockAddTask = api.addTask as jest.Mock;
+        mockAddTask.mockResolvedValue({ data: {} });
+
+        const onTaskAdded = jest.fn();
+        render(<AddTask onTaskAdded={onTaskAdded} />);
+
+        fireEvent.change(screen.getByLabelText(/タイトル/), { target: { value: '新しいタスク' } });
+        fireEvent.change(screen.getByLabelText(/説明/), { target: { value: '説明文' } });
+        fireEvent.change(screen.getByLabelText(/期限/), { target: { value: '2025-06-30' } });
+
+        fireEvent.click(screen.getByText('追加'));
+
+        await waitFor(() => {
+            expect(mockAddTask).toHaveBeenCalledWith(
+                expect.objectContaining({
+                    title: '新しいタスク',
+                    description: '説明文',
+                    dueDate: '2025-06-30',
+                })
+            );
+        });
+    });
 });

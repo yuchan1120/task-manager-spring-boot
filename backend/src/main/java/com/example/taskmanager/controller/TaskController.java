@@ -75,6 +75,7 @@ public class TaskController {
             Task task = optionalTask.get();
             task.setTitle(updatedTask.getTitle());
             task.setDescription(updatedTask.getDescription());
+            task.setDueDate(updatedTask.getDueDate());
             taskService.saveTask(task);
             return ResponseEntity.ok(task);
         } else {
