@@ -1,6 +1,10 @@
 module.exports = {
   preset: 'ts-jest',
   testEnvironment: 'jsdom',
+  moduleNameMapper: {
+    '\\.module\\.css$': 'identity-obj-proxy',
+    '\\.css$': '<rootDir>/__mocks__/styleMock.js',
+  },
   transform: {
     '^.+\\.(ts|tsx)$': 'ts-jest',
     '^.+\\.jsx?$': 'babel-jest',
