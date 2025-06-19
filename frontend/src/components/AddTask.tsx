@@ -1,8 +1,7 @@
 // インポート
 import React, { useState } from 'react'; // useState: Reactのフックで、状態（state）を管理します。
-import { addTask } from '../../api'; // addTask: タスクを追加するAPI関数。
-import type { NewTask } from '../../api'; // NewTask: 新しいタスクの型定義（TypeScriptの型）。
-import styles from './AddTask.module.css'
+import styles from '../styles/AddTask.module.css'
+import { addTask, NewTask } from '../api';
 
 // Propsの型定義
 type AddTaskProps = {

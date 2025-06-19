@@ -1,8 +1,8 @@
 // TaskList.tsx
 import React, { useEffect, useState, useCallback, useMemo } from 'react';
-import { getTasks, toggleTask, deleteTask, updateTask } from '../../api';
-import AddTask from '../AddTask/AddTask';
-import styles from './TaskList.module.css'
+import styles from '../styles/TaskList.module.css';
+import { deleteTask, getTasks, toggleTask, updateTask } from '../api';
+import AddTask from './AddTask';
 
 type Task = {
   id: number;
