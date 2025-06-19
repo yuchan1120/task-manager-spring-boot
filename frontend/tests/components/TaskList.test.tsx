@@ -1,7 +1,7 @@
 import React from 'react';
 import { render, screen, fireEvent, waitFor } from '@testing-library/react';
 import '@testing-library/jest-dom';
-import TaskList from '../../src/components/TaskList/TaskList';
+import TaskList from '../../src/components/TaskList';
 import * as api from '../../src/api';
 
 // モックデータ
