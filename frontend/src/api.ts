@@ -15,30 +15,40 @@ export type Task = {
 // 新規作成時の入力型（id は不要）
 export type NewTask = Omit<Task, 'id'>;
 
-// タスク取得
+const getAuthHeader = () => {
+  const token = localStorage.getItem('token');
+  return {
+    headers: {
+      Authorization: `Bearer ${token}`
+    }
+  };
+};
+
+
+export const login = (username: string, password: string) => {
+  return axios.post('http://localhost:8080/api/auth/login', { username, password });
+};
+
 export const getTasks = (): Promise<AxiosResponse<Task[]>> => {
-  return axios.get(API_BASE);
+  return axios.get(API_BASE, getAuthHeader());
 };
 
-// タスク追加
 export const addTask = (task: NewTask): Promise<AxiosResponse<Task>> => {
-  return axios.post(API_BASE, task);
+  return axios.post(API_BASE, task, getAuthHeader());
 };
 
-// 完了状態の切り替え
 export const toggleTask = (id: number): Promise<AxiosResponse<Task>> => {
-  return axios.put(`${API_BASE}/${id}/toggle`);
+  return axios.put(`${API_BASE}/${id}/toggle`, null, getAuthHeader());
 };
 
-// タスク削除
 export const deleteTask = (id: number): Promise<AxiosResponse<void>> => {
-  return axios.delete(`${API_BASE}/${id}`);
+  return axios.delete(`${API_BASE}/${id}`, getAuthHeader());
 };
 
-// タスク更新
 export const updateTask = (
   id: number,
   data: Partial<Omit<Task, 'id'>>
 ): Promise<AxiosResponse<Task>> => {
-  return axios.put(`${API_BASE}/${id}`, data);
+  return axios.put(`${API_BASE}/${id}`, data, getAuthHeader());
 };
+
