@@ -28,18 +28,26 @@ public class JwtAuthenticationFilter extends OncePerRequestFilter {
                                     throws ServletException, IOException {
         String authHeader = request.getHeader("Authorization");
         if (authHeader == null || !authHeader.startsWith("Bearer ")) {
+            System.out.println("Authorization header missing or invalid");
             filterChain.doFilter(request, response);
             return;
         }
 
         String jwt = authHeader.substring(7);
         String username = jwtService.extractUsername(jwt);
+        System.out.println("Extracted username from token: " + username);
 
         if (username != null && SecurityContextHolder.getContext().getAuthentication() == null) {
             var userDetails = userDetailsService.loadUserByUsername(username);
             if (jwtService.isTokenValid(jwt, userDetails)) {
+                System.out.println("Token is valid for user: " + username);
                 var authToken = new UsernamePasswordAuthenticationToken(
-                    userDetails, null, userDetails.get                SecurityContextHolder.getContext().setAuthentication(authToken);
+                    userDetails, null, userDetails.getAuthorities()
+                );
+                authToken.setDetails(new WebAuthenticationDetailsSource().buildDetails(request));
+                SecurityContextHolder.getContext().setAuthentication(authToken);
+            } else {
+                System.out.println("Token is invalid for user: " + username);
             }
         }
 

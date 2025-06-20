@@ -3,7 +3,8 @@ package com.example.taskmanager.controller;
 import com.example.taskmanager.dto.UserDTO;
 import com.example.taskmanager.model.User;
 import com.example.taskmanager.repository.UserRepository;
-import com.example.taskmanager.util.JwtUtil;
+import com.example.taskmanager.security.CustomUserDetails;
+import com.example.taskmanager.security.JwtService;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
@@ -15,14 +16,14 @@ import java.util.Optional;
 
 @RestController
 @RequestMapping("/api/auth")
-@CrossOrigin(origins = "*")
+@CrossOrigin(origins = "http://localhost:3000")
 public class AuthController {
 
     @Autowired
     private UserRepository userRepository;
 
     @Autowired
-    private JwtUtil jwtUtil;
+    private JwtService JwtService;
 
     private final BCryptPasswordEncoder passwordEncoder = new BCryptPasswordEncoder();
 
@@ -40,7 +41,7 @@ public class AuthController {
         if (userOpt.isPresent()) {
             User user = userOpt.get();
             if (passwordEncoder.matches(userDTO.getPassword(), user.getPassword())) {
-                String token = jwtUtil.generateToken(user.getUsername());
+                String token = JwtService.generateToken(new CustomUserDetails(user));
                 return ResponseEntity.ok(Collections.singletonMap("token", token));
             }
         }

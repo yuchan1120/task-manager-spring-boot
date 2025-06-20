@@ -11,13 +11,20 @@ import java.util.HashMap;
 import java.util.Map;
 import java.util.function.Function;
 
+import java.util.Base64;
+import io.jsonwebtoken.security.Keys;
+import java.security.Key;
+import java.nio.charset.StandardCharsets;
+
 @Service
 public class JwtService {
-    private final String SECRET_KEY = "your-secret-key";
+    private final Key key = Keys.hmacShaKeyFor("my-super-secure-key-1234567890-abcdefg-xyz".getBytes(StandardCharsets.UTF_8));
+    private final long expirationMs = 86400000; // 1日
 
     public String extractUsername(String token) {
-        return Jwts.parser()
-            .setSigningKey(SECRET_KEY)
+        return Jwts.parserBuilder()
+            .setSigningKey(key)
+            .build()
             .parseClaimsJws(token)
             .getBody()
             .getSubject();
@@ -32,8 +39,8 @@ public class JwtService {
         return Jwts.builder()
             .setSubject(userDetails.getUsername())
             .setIssuedAt(new Date())
-            .setExpiration(new Date(System.currentTimeMillis() + 1000 * 60 * 60 * 10)) // 10時間
-            .signWith(SignatureAlgorithm.HS256, SECRET_KEY)
+            .setExpiration(new Date(System.currentTimeMillis() + expirationMs))
+            .signWith(key)
             .compact();
     }
 }
