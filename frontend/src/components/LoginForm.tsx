@@ -1,14 +1,13 @@
-import React, { useState } from 'react';
-import { login } from '../api'; // api.ts から login をインポート
+// src/components/LoginForm.tsx
+import React, { useState, useContext } from 'react';
+import { login } from '../api';
+import { AuthContext } from '../AuthContext';
 
-interface LoginFormProps {
-  onLogin: (token: string) => void;
-}
-
-const LoginForm: React.FC<LoginFormProps> = ({ onLogin }) => {
+const LoginForm: React.FC = () => {
   const [username, setUsername] = useState('');
   const [password, setPassword] = useState('');
   const [error, setError] = useState('');
+  const { login: loginWithContext } = useContext(AuthContext);
 
   const handleLogin = async () => {
     if (!username || !password) {
@@ -17,18 +16,17 @@ const LoginForm: React.FC<LoginFormProps> = ({ onLogin }) => {
     }
 
     try {
-      const response = await login(username, password); // api.ts の login を使用
+      const response = await login(username, password);
       const token = response.data.token;
-      localStorage.setItem('token', token); // api.ts と同じキーに統一
+      loginWithContext(token);
+      localStorage.setItem('token', token);
       setError('');
-      onLogin(token);
-    } catch (err: any) {
-      console.error('ログインエラー:', err);
+    } catch {
       setError('ログイン失敗：ユーザー名またはパスワードが間違っています');
     }
   };
 
-  const handleKeyDown = (e: React.KeyboardEvent) => {
+  const handleKeyDown = (e: React.KeyboardEvent<HTMLInputElement>) => {
     if (e.key === 'Enter') {
       handleLogin();
     }
@@ -41,15 +39,15 @@ const LoginForm: React.FC<LoginFormProps> = ({ onLogin }) => {
         type="text"
         value={username}
         onChange={(e) => setUsername(e.target.value)}
-        placeholder="ユーザー名"
         onKeyDown={handleKeyDown}
+        placeholder="ユーザー名"
       />
       <input
         type="password"
         value={password}
         onChange={(e) => setPassword(e.target.value)}
-        placeholder="パスワード"
         onKeyDown={handleKeyDown}
+        placeholder="パスワード"
       />
       <button onClick={handleLogin}>ログイン</button>
       {error && <p style={{ color: 'red' }}>{error}</p>}

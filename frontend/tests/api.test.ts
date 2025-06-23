@@ -8,8 +8,33 @@ import {
   updateTask,
   Task,
   NewTask,
+  getAuthHeader,
   login
 } from '../src/api';
+
+
+describe('getAuthHeader 関数のテスト', () => {
+  test('JWT トークンが localStorage にある場合、正しいヘッダーを返す', () => {
+    localStorage.setItem('jwt', 'mock-token');
+    const header = getAuthHeader();
+    expect(header).toEqual({
+      headers: {
+        Authorization: 'Bearer mock-token'
+      }
+    });
+  });
+
+  test('JWT トークンが存在しない場合、null を含むヘッダーを返す', () => {
+    localStorage.removeItem('jwt');
+    const header = getAuthHeader();
+    expect(header).toEqual({
+      headers: {
+        Authorization: 'Bearer null'
+      }
+    });
+  });
+});
+
 
 describe('API 関数のテスト', () => {
   const mock = new MockAdapter(axios);
@@ -89,5 +114,9 @@ describe('API 関数のテスト', () => {
     const response = await updateTask(1, updatedData);
     expect(response.status).toBe(200);
     expect(response.data).toEqual(updatedTask);
+  });
+
+  test('getAuthHeader は関数であることを確認', () => {
+    expect(typeof getAuthHeader).toBe('function');
   });
 });

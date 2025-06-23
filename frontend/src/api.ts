@@ -15,8 +15,8 @@ export type Task = {
 // 新規作成時の入力型（id は不要）
 export type NewTask = Omit<Task, 'id'>;
 
-const getAuthHeader = () => {
-  const token = localStorage.getItem('token');
+export const getAuthHeader = () => {
+  const token = localStorage.getItem('jwt');
   return {
     headers: {
       Authorization: `Bearer ${token}`
@@ -24,9 +24,12 @@ const getAuthHeader = () => {
   };
 };
 
-
 export const login = (username: string, password: string) => {
   return axios.post('http://localhost:8080/api/auth/login', { username, password });
+};
+
+export const validateToken = () => {
+  return axios.get('http://localhost:8080/api/auth/validate', getAuthHeader());
 };
 
 export const getTasks = (): Promise<AxiosResponse<Task[]>> => {
