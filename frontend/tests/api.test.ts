@@ -7,7 +7,8 @@ import {
   deleteTask,
   updateTask,
   Task,
-  NewTask
+  NewTask,
+  login
 } from '../src/api';
 
 describe('API 関数のテスト', () => {
@@ -17,6 +18,16 @@ describe('API 関数のテスト', () => {
   afterEach(() => {
     mock.reset();
   });
+
+  test('login: 正常にトークンを取得できる', async () => {
+    const mockToken = { token: 'mock-token' };
+    mock.onPost('http://localhost:8080/api/auth/login').reply(200, mockToken);
+
+    const response = await login('user', 'pass');
+    expect(response.status).toBe(200);
+    expect(response.data).toEqual(mockToken);
+  });
+
 
   test('getTasks: タスク一覧を取得できる', async () => {
     const mockData: Task[] = [
