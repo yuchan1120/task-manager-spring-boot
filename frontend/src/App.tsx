@@ -1,15 +1,34 @@
-import React from 'react';
+// src/App.tsx
+import React, { useContext } from 'react';
+import { AuthProvider, AuthContext } from './AuthContext';
+import LoginForm from './components/LoginForm';
 import TaskList from './components/TaskList';
-import './styles/reset.css';
-import './styles/variables.css';
 import './styles/global.css';
 
-function App() {
+const AppContent = () => {
+  const { isAuthenticated, logout, login } = useContext(AuthContext);
+
+
   return (
     <div className="app">
       <h1>タスク管理アプリ</h1>
-      <TaskList />
+      {isAuthenticated ? (
+        <>
+          <button onClick={logout}>ログアウト</button>
+          <TaskList />
+        </>
+      ) : (
+        <LoginForm />
+      )}
     </div>
+  );
+};
+
+function App() {
+  return (
+    <AuthProvider>
+      <AppContent />
+    </AuthProvider>
   );
 }
 
