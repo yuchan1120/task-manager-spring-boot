@@ -249,4 +249,61 @@ describe('TaskList', () => {
       expect(dateInput).toBeInTheDocument();
     });
   });
+
+
+  describe('TaskList Component', () => {
+    test('検索バーでタスクを絞り込める', async () => {
+      render(<TaskList />);
+
+      // 初期表示を待つ
+      await waitFor(() => {
+        expect(screen.getByText('Task A')).toBeInTheDocument();
+        expect(screen.getByText('Task B')).toBeInTheDocument();
+      });
+
+      // 検索バーに「Task A」と入力
+      const searchInput = screen.getByPlaceholderText('タスクを検索...');
+      fireEvent.change(searchInput, { target: { value: 'Task A' } });
+
+      // 絞り込み結果を確認
+      await waitFor(() => {
+        expect(screen.getByText('Task A')).toBeInTheDocument();
+        expect(screen.queryByText('Task B')).not.toBeInTheDocument();
+      });
+    });
+
+    test('検索語が空ならすべて表示される', async () => {
+      render(<TaskList />);
+
+      await waitFor(() => {
+        expect(screen.getByText('Task A')).toBeInTheDocument();
+        expect(screen.getByText('Task B')).toBeInTheDocument();
+      });
+
+      const searchInput = screen.getByPlaceholderText('タスクを検索...');
+      fireEvent.change(searchInput, { target: { value: '' } });
+
+      await waitFor(() => {
+        expect(screen.getByText('Task A')).toBeInTheDocument();
+        expect(screen.getByText('Task B')).toBeInTheDocument();
+      });
+    });
+
+    test('検索はタイトルと説明の両方にマッチする', async () => {
+      render(<TaskList />);
+
+      await waitFor(() => {
+        expect(screen.getByText('Task A')).toBeInTheDocument();
+        expect(screen.getByText('Task B')).toBeInTheDocument();
+      });
+
+      const searchInput = screen.getByPlaceholderText('タスクを検索...');
+      fireEvent.change(searchInput, { target: { value: 'Desc B' } });
+
+      await waitFor(() => {
+        expect(screen.getByText('Task B')).toBeInTheDocument();
+        expect(screen.queryByText('Task A')).not.toBeInTheDocument();
+      });
+    });
+  });
 });
