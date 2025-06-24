@@ -69,4 +69,4 @@ TodoReceiver がメッセージを受信すると、以下のようなログが�
 rabbitTemplate.convertAndSend("todoQueue", message); 
 ```
 
-```
+---
