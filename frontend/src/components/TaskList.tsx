@@ -113,26 +113,26 @@ const TaskList: React.FC = () => {
         <AddTask onTaskAdded={fetchTasks} />
       </div>
 
+      {/* 🔍 検索バー */}
+      <div className={styles.searchBar}>
+        <input
+          type="text"
+          placeholder="タスクを検索..."
+          value={searchQuery}
+          onChange={(e) => setSearchQuery(e.target.value)}
+        />
+      </div>
+
+      {/* フィルターボタン */}
+      <div className={styles.filterButtons}>
+        {(['all', 'incomplete', 'completed'] as const).map(type => (
+          <button key={type} onClick={() => setFilter(type)} disabled={filter === type}>
+            {type === 'all' ? 'すべて' : type === 'incomplete' ? '未完了' : '完了済み'}
+          </button>
+        ))}
+      </div>
+
       <div className={styles.scrollArea}>
-        {/* 🔍 検索バー */}
-        <div className={styles.searchBar}>
-          <input
-            type="text"
-            placeholder="タスクを検索..."
-            value={searchQuery}
-            onChange={(e) => setSearchQuery(e.target.value)}
-          />
-        </div>
-
-        {/* フィルターボタン */}
-        <div className={styles.filterButtons}>
-          {(['all', 'incomplete', 'completed'] as const).map(type => (
-            <button key={type} onClick={() => setFilter(type)} disabled={filter === type}>
-              {type === 'all' ? 'すべて' : type === 'incomplete' ? '未完了' : '完了済み'}
-            </button>
-          ))}
-        </div>
-
         {loading ? (
           <p>読み込み中...</p>
         ) : error ? (
