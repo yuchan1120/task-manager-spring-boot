@@ -38,6 +38,8 @@
 docker compose up --build
 ```
 
+ログイン: testuser / testpass
+
 ---
 
 ## 🐰 RabbitMQ動作テスト
