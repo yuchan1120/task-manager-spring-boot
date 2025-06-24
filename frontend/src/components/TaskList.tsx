@@ -17,9 +17,9 @@ const TaskList: React.FC = () => {
   const [editingTask, setEditingTask] = useState<Pick<Task, 'id' | 'title' | 'dueDate'> | null>(null);
   const [loading, setLoading] = useState<boolean>(false);
   const [error, setError] = useState<string>('');
-  const [filter, setFilter] = useState<'all' | 'completed' | 'incomplete'>('all'); // フィルター状態
+  const [filter, setFilter] = useState<'all' | 'completed' | 'incomplete'>('all');
+  const [searchQuery, setSearchQuery] = useState<string>('');
 
-  // useCallback でメモ化すると、再レンダリング時の無駄な再定義を防げる
   const fetchTasks = useCallback(() => {
     setLoading(true);
     getTasks()
@@ -37,9 +37,16 @@ const TaskList: React.FC = () => {
 
   const filteredAndSortedTasks = useMemo(() => {
     const filtered = tasks.filter(task => {
-      if (filter === 'completed') return task.completed;
-      if (filter === 'incomplete') return !task.completed;
-      return true;
+      const matchesFilter =
+        (filter === 'completed' && task.completed) ||
+        (filter === 'incomplete' && !task.completed) ||
+        filter === 'all';
+
+      const matchesSearch =
+        task.title.toLowerCase().includes(searchQuery.toLowerCase()) ||
+        task.description.toLowerCase().includes(searchQuery.toLowerCase());
+
+      return matchesFilter && matchesSearch;
     });
 
     return filtered.sort((a, b) => {
@@ -47,7 +54,7 @@ const TaskList: React.FC = () => {
       if (!b.dueDate) return -1;
       return new Date(a.dueDate).getTime() - new Date(b.dueDate).getTime();
     });
-  }, [tasks, filter]);
+  }, [tasks, filter, searchQuery]);
 
   const handleToggle = useCallback(async (id: number) => {
     try {
@@ -100,7 +107,6 @@ const TaskList: React.FC = () => {
     return `${date.getFullYear()}/${date.getMonth() + 1}/${date.getDate()}`;
   };
 
-
   return (
     <div className={styles.container}>
       <div className={styles.fixedForm}>
@@ -108,6 +114,17 @@ const TaskList: React.FC = () => {
       </div>
 
       <div className={styles.scrollArea}>
+        {/* 🔍 検索バー */}
+        <div className={styles.searchBar}>
+          <input
+            type="text"
+            placeholder="タスクを検索..."
+            value={searchQuery}
+            onChange={(e) => setSearchQuery(e.target.value)}
+          />
+        </div>
+
+        {/* フィルターボタン */}
         <div className={styles.filterButtons}>
           {(['all', 'incomplete', 'completed'] as const).map(type => (
             <button key={type} onClick={() => setFilter(type)} disabled={filter === type}>
