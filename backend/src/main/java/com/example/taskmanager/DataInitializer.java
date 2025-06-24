@@ -5,6 +5,7 @@ import com.example.taskmanager.repository.UserRepository;
 import org.springframework.boot.CommandLineRunner;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
+import org.springframework.security.crypto.bcrypt.BCryptPasswordEncoder;
 
 @Configuration
 public class DataInitializer {
@@ -13,7 +14,9 @@ public class DataInitializer {
     CommandLineRunner initDatabase(UserRepository userRepository) {
         return args -> {
             if (userRepository.count() == 0) {
-                userRepository.save(new User("testuser", "testpass"));
+                BCryptPasswordEncoder encoder = new BCryptPasswordEncoder();
+                String encodedPassword = encoder.encode("testpass");
+                userRepository.save(new User("testuser", encodedPassword));
             }
         };
     }
