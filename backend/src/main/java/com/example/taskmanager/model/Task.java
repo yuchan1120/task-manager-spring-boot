@@ -2,6 +2,9 @@ package com.example.taskmanager.model;
 
 import java.time.LocalDate;
 import java.util.Set;
+import java.util.stream.Collectors;
+
+import com.example.taskmanager.dto.TaskDTO;
 
 import jakarta.persistence.Entity;
 import jakarta.persistence.GeneratedValue;
@@ -83,5 +86,18 @@ public class Task {
 
     public void setTags(Set<Tag> tags) {
         this.tags = tags;
+    }
+
+    public static TaskDTO toDTO(Task task) {
+        TaskDTO dto = new TaskDTO();
+        dto.id = task.getId();
+        dto.title = task.getTitle();
+        dto.description = task.getDescription();
+        dto.completed = task.isCompleted();
+        dto.dueDate = task.getDueDate() != null ? task.getDueDate().toString() : null;
+        dto.tagIds = task.getTags().stream()
+            .map(Tag::getId)
+            .collect(Collectors.toSet());
+        return dto;
     }
 }

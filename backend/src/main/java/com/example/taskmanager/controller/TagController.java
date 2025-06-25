@@ -1,5 +1,6 @@
 package com.example.taskmanager.controller;
 
+import com.example.taskmanager.dto.TagDTO;
 import com.example.taskmanager.model.Tag;
 import com.example.taskmanager.service.TagService;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -15,7 +16,7 @@ public class TagController {
     private TagService tagService;
 
     @GetMapping
-    public List<Tag> getAllTags() {
+    public List<TagDTO> getAllTags() {
         return tagService.getAllTags();
     }
 
