@@ -1,28 +1,33 @@
-// インポート
-import React, { useState } from 'react'; // useState: Reactのフックで、状態（state）を管理します。
-import styles from '../styles/AddTask.module.css'
-import { addTask, NewTask } from '../api';
+import React, { useState, useEffect } from 'react';
+import styles from '../styles/AddTask.module.css';
+import { addTask, getTags, NewTask, Tag } from '../api';
 
-// Propsの型定義
 type AddTaskProps = {
-  onTaskAdded: () => void; // onTaskAdded: タスク追加後に呼び出されるコールバック関数（親コンポーネントに通知するため）。
+  onTaskAdded: () => void;
 };
 
-// コンポーネント本体
-// React.FC<AddTaskProps>: 関数コンポーネントで、AddTaskProps 型のpropsを受け取る。
 const AddTask: React.FC<AddTaskProps> = ({ onTaskAdded }) => {
-  // 状態管理
   const [title, setTitle] = useState<string>('');
   const [description, setDescription] = useState<string>('');
   const [dueDate, setDueDate] = useState<string>('');
+  const [tagIds, setTagIds] = useState<number[]>([]);
+  const [tags, setTags] = useState<Tag[]>([]);
   const [loading, setLoading] = useState<boolean>(false);
   const [error, setError] = useState<string>('');
 
-  // フォーム送信処理
+  // タグ一覧を取得
+  useEffect(() => {
+
+    getTags()
+      .then(res => {
+        setTags(res.data);
+      })
+      .catch(err => console.error('タグの取得に失敗しました:', err));
+  }, []);
+
   const handleSubmit = async (e: React.FormEvent<HTMLFormElement>) => {
-    // フォーム送信後にページがリロードされてしまい、入力内容が消えたり、Reactの状態がリセットされ
     e.preventDefault();
-    // 入力チェック
+
     if (!title.trim() || !description.trim()) {
       setError('タイトルと説明は必須です');
       return;
@@ -35,25 +40,23 @@ const AddTask: React.FC<AddTaskProps> = ({ onTaskAdded }) => {
         title,
         description,
         completed: false,
-        dueDate: dueDate || undefined, // 空文字は送らないように
+        dueDate: dueDate || undefined,
+        tagIds: tagIds,
       };
-      // API呼び出し
       await addTask(newTask);
-      // フォームをリセット
+
       setTitle('');
       setDescription('');
       setDueDate('');
-      // 親に通知
+      setTagIds([]);
       onTaskAdded();
     } catch (err) {
-      // エラー処理
       setError('タスクの追加に失敗しました');
       console.error(err);
     } finally {
       setLoading(false);
     }
   };
-
 
   return (
     <form onSubmit={handleSubmit} className={styles.form}>
@@ -85,6 +88,24 @@ const AddTask: React.FC<AddTaskProps> = ({ onTaskAdded }) => {
         onChange={(e) => setDueDate(e.target.value)}
         className={styles.input}
       />
+
+      <label htmlFor="tags">タグ</label>
+      <select
+        id="tags"
+        multiple
+        value={tagIds.map(String)}
+        onChange={(e) => {
+          const selected = Array.from(e.target.selectedOptions).map(opt => Number(opt.value));
+          setTagIds(selected);
+        }}
+        className={styles.input}
+      >
+        {tags.map(tag => (
+          <option key={tag.id} value={String(tag.id)}>
+            {tag.name}
+          </option>
+        ))}
+      </select>
 
       <button type="submit" disabled={loading} className={styles.button}>
         {loading ? '追加中...' : '追加'}

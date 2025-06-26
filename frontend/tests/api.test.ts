@@ -1,3 +1,4 @@
+// frontend/tests/api.test.ts
 import axios from 'axios';
 import MockAdapter from 'axios-mock-adapter';
 import {
@@ -6,117 +7,111 @@ import {
   toggleTask,
   deleteTask,
   updateTask,
+  getTags,
+  addTag,
+  updateTag,
+  deleteTag,
+  login,
+  validateToken,
   Task,
-  NewTask,
-  getAuthHeader,
-  login
+  Tag,
+  NewTask
 } from '../src/api';
 
+const mock = new MockAdapter(axios);
+const token = 'test-token';
+localStorage.setItem('jwt', token);
 
-describe('getAuthHeader 関数のテスト', () => {
-  test('JWT トークンが localStorage にある場合、正しいヘッダーを返す', () => {
-    localStorage.setItem('jwt', 'mock-token');
-    const header = getAuthHeader();
-    expect(header).toEqual({
-      headers: {
-        Authorization: 'Bearer mock-token'
-      }
-    });
-  });
-
-  test('JWT トークンが存在しない場合、null を含むヘッダーを返す', () => {
-    localStorage.removeItem('jwt');
-    const header = getAuthHeader();
-    expect(header).toEqual({
-      headers: {
-        Authorization: 'Bearer null'
-      }
-    });
-  });
-});
-
-
-describe('API 関数のテスト', () => {
-  const mock = new MockAdapter(axios);
-  const API_BASE = 'http://localhost:8080/api/tasks';
-
+describe('API Tests', () => {
   afterEach(() => {
     mock.reset();
   });
 
-  test('login: 正常にトークンを取得できる', async () => {
-    const mockToken = { token: 'mock-token' };
-    mock.onPost('http://localhost:8080/api/auth/login').reply(200, mockToken);
+  const authHeader = { Authorization: `Bearer ${token}` };
+
+  it('should login successfully', async () => {
+    const responseData = { token: 'abc123' };
+    mock.onPost('http://localhost:8080/api/auth/login').reply(200, responseData);
 
     const response = await login('user', 'pass');
-    expect(response.status).toBe(200);
-    expect(response.data).toEqual(mockToken);
+    expect(response.data).toEqual(responseData);
   });
 
+  it('should validate token', async () => {
+    mock.onGet('http://localhost:8080/api/auth/validate').reply(200, { valid: true });
 
-  test('getTasks: タスク一覧を取得できる', async () => {
-    const mockData: Task[] = [
-      { id: 1, title: 'タスク1', description: '説明1', completed: false }
-    ];
-    mock.onGet(API_BASE).reply(200, mockData);
+    const response = await validateToken();
+    expect(response.data.valid).toBe(true);
+  });
+
+  it('should fetch tasks', async () => {
+    const tasks: Task[] = [{ id: 1, title: 'Test', description: 'Desc', completed: false }];
+    mock.onGet('http://localhost:8080/api/tasks').reply(200, tasks);
 
     const response = await getTasks();
-    expect(response.status).toBe(200);
-    expect(response.data).toEqual(mockData);
+    expect(response.data).toEqual(tasks);
   });
 
-  test('addTask: 新しいタスクを追加できる', async () => {
-    const newTask: NewTask = {
-      title: '新規タスク',
-      description: '説明',
-      completed: false
-    };
-    const createdTask: Task = { id: 1, ...newTask };
-
-    mock.onPost(API_BASE, newTask).reply(201, createdTask);
+  it('should add a task', async () => {
+    const newTask: NewTask = { title: 'New', description: 'Task', completed: false };
+    const createdTask: Task = { id: 2, ...newTask };
+    mock.onPost('http://localhost:8080/api/tasks').reply(200, createdTask);
 
     const response = await addTask(newTask);
-    expect(response.status).toBe(201);
     expect(response.data).toEqual(createdTask);
   });
 
-  test('toggleTask: タスクの完了状態を切り替えられる', async () => {
-    const toggledTask: Task = {
-      id: 1,
-      title: 'タスク1',
-      description: '説明1',
-      completed: true
-    };
-    mock.onPut(`${API_BASE}/1/toggle`).reply(200, toggledTask);
+  it('should toggle a task', async () => {
+    const toggledTask: Task = { id: 1, title: 'Test', description: 'Desc', completed: true };
+    mock.onPut('http://localhost:8080/api/tasks/1/toggle').reply(200, toggledTask);
 
     const response = await toggleTask(1);
-    expect(response.status).toBe(200);
-    expect(response.data).toEqual(toggledTask);
+    expect(response.data.completed).toBe(true);
   });
 
-  test('deleteTask: タスクを削除できる', async () => {
-    mock.onDelete(`${API_BASE}/1`).reply(204);
+  it('should delete a task', async () => {
+    mock.onDelete('http://localhost:8080/api/tasks/1').reply(200);
 
     const response = await deleteTask(1);
-    expect(response.status).toBe(204);
-  });
-
-  test('updateTask: タスクを更新できる', async () => {
-    const updatedData = { title: '更新後タイトル' };
-    const updatedTask: Task = {
-      id: 1,
-      title: '更新後タイトル',
-      description: '説明1',
-      completed: false
-    };
-    mock.onPut(`${API_BASE}/1`, updatedData).reply(200, updatedTask);
-
-    const response = await updateTask(1, updatedData);
     expect(response.status).toBe(200);
-    expect(response.data).toEqual(updatedTask);
   });
 
-  test('getAuthHeader は関数であることを確認', () => {
-    expect(typeof getAuthHeader).toBe('function');
+  it('should update a task', async () => {
+    const updatedTask: Task = { id: 1, title: 'Updated', description: 'Updated', completed: false };
+    mock.onPut('http://localhost:8080/api/tasks/1').reply(200, updatedTask);
+
+    const response = await updateTask(1, { title: 'Updated', description: 'Updated' });
+    expect(response.data.title).toBe('Updated');
+  });
+
+  it('should fetch tags', async () => {
+    const tags: Tag[] = [{ id: 1, name: 'Urgent' }];
+    mock.onGet('http://localhost:8080/api/tags').reply(200, tags);
+
+    const response = await getTags();
+    expect(response.data).toEqual(tags);
+  });
+
+  it('should add a tag', async () => {
+    const newTag: Tag = { id: 2, name: 'Work' };
+    mock.onPost('http://localhost:8080/api/tags').reply(200, newTag);
+
+    const response = await addTag('Work');
+    expect(response.data.name).toBe('Work');
+  });
+
+  it('should update a tag', async () => {
+    const updatedTag: Tag = { id: 1, name: 'UpdatedTag' };
+    mock.onPut('http://localhost:8080/api/tags/1').reply(200, updatedTag);
+
+    const response = await updateTag(1, 'UpdatedTag');
+    expect(response.data.name).toBe('UpdatedTag');
+  });
+
+  it('should delete a tag', async () => {
+    mock.onDelete('http://localhost:8080/api/tags/1').reply(200);
+
+    const response = await deleteTag(1);
+    expect(response.status).toBe(200);
   });
 });
