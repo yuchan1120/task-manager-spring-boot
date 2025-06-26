@@ -41,7 +41,6 @@ const TaskList: React.FC = () => {
     setLoading(true);
     getTasks()
       .then(res => {
-        console.log('取得したデータ:', res.data); // ← ここを追加
         setTasks(res.data);
       })
       .catch(err => {
@@ -254,7 +253,7 @@ const TaskList: React.FC = () => {
                       />
                       <select
                         multiple
-                        value={editingTask.tagIds?.map(String)} 
+                        value={editingTask.tagIds?.map(String)}
                         onChange={(e) => {
                           const selected = Array.from(e.target.selectedOptions).map(opt => Number(opt.value));
                           setEditingTask(prev => prev ? { ...prev, tagIds: selected } : prev);
@@ -282,12 +281,10 @@ const TaskList: React.FC = () => {
 
                   <span>{task.description}</span>
 
-                  <span className={styles.tagLabel}>
+                  <span data-testid="tag-label" className={styles.tagLabel}>
                     タグ: {
                       task.tagIds && task.tagIds.length > 0
-                        ? task.tagIds
-                          .map(id => tags.find(tag => tag.id === id)?.name || '不明なタグ')
-                          .join(', ')
+                        ? task.tagIds.map(id => tags.find(tag => tag.id === id)?.name || '不明なタグ').join(', ')
                         : 'なし'
                     }
                   </span>

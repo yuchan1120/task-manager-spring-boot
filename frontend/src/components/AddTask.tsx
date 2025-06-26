@@ -20,7 +20,6 @@ const AddTask: React.FC<AddTaskProps> = ({ onTaskAdded }) => {
 
     getTags()
       .then(res => {
-        console.log('取得したタグ:', res.data); // ← ここで形式を確認
         setTags(res.data);
       })
       .catch(err => console.error('タグの取得に失敗しました:', err));

@@ -4,14 +4,21 @@ import '@testing-library/jest-dom';
 import AddTask from '../../src/components/AddTask';
 import * as api from '../../src/api';
 
-jest.mock('../../src/api');
+jest.mock('../../src/api', () => ({
+    addTask: jest.fn(),
+    getTags: jest.fn(),
+}));
+
 
 describe('AddTask コンポーネント', () => {
     const mockOnTaskAdded = jest.fn();
 
+
     beforeEach(() => {
         jest.clearAllMocks();
+        (api.getTags as jest.Mock).mockResolvedValue({ data: [] });
     });
+
 
     test('フォームの初期状態が正しい', () => {
         render(<AddTask onTaskAdded={mockOnTaskAdded} />);
@@ -42,6 +49,8 @@ describe('AddTask コンポーネント', () => {
                 title: '新しいタスク',
                 description: '説明文',
                 completed: false,
+                dueDate: undefined,
+                tagIds: [],
             });
             expect(mockOnTaskAdded).toHaveBeenCalled();
             expect(screen.getByLabelText(/タイトル/i)).toHaveValue('');
@@ -63,8 +72,8 @@ describe('AddTask コンポーネント', () => {
     });
 
     test('期限入力欄が表示され、送信時にAPIに含まれること', async () => {
-        const mockAddTask = api.addTask as jest.Mock;
-        mockAddTask.mockResolvedValue({ data: {} });
+        (api.getTags as jest.Mock).mockResolvedValue({ data: [] });
+        (api.addTask as jest.Mock).mockResolvedValue({ data: {} });
 
         const onTaskAdded = jest.fn();
         render(<AddTask onTaskAdded={onTaskAdded} />);
@@ -76,7 +85,7 @@ describe('AddTask コンポーネント', () => {
         fireEvent.click(screen.getByText('追加'));
 
         await waitFor(() => {
-            expect(mockAddTask).toHaveBeenCalledWith(
+            expect(api.addTask).toHaveBeenCalledWith(
                 expect.objectContaining({
                     title: '新しいタスク',
                     description: '説明文',
@@ -84,5 +93,58 @@ describe('AddTask コンポーネント', () => {
                 })
             );
         });
+    });
+
+    test('タグを選択して送信すると、tagIds が API に渡される', async () => {
+        (api.getTags as jest.Mock).mockResolvedValue({
+            data: [
+                { id: 1, name: '仕事' },
+                { id: 2, name: '個人' },
+            ],
+        });
+        (api.addTask as jest.Mock).mockResolvedValue({});
+
+        render(<AddTask onTaskAdded={mockOnTaskAdded} />);
+
+        fireEvent.change(await screen.findByLabelText(/タイトル/), { target: { value: 'タグ付きタスク' } });
+        fireEvent.change(screen.getByLabelText(/説明/), { target: { value: 'タグのテスト' } });
+
+        const select = screen.getByLabelText(/タグ/) as HTMLSelectElement;
+        const options = screen.getAllByRole('option') as HTMLOptionElement[];
+
+        // 複数選択状態を設定
+        options.forEach(option => {
+            if (['1', '2'].includes(option.value)) {
+                option.selected = true;
+            }
+        });
+
+        fireEvent.change(select);
+
+        fireEvent.click(screen.getByText('追加'));
+
+        await waitFor(() => {
+            expect(api.addTask).toHaveBeenCalledWith(
+                expect.objectContaining({
+                    tagIds: expect.arrayContaining([1, 2]),
+                })
+            );
+        });
+    });
+
+    test('タグの取得に失敗した場合、エラーがコンソールに出力される', async () => {
+        const consoleErrorSpy = jest.spyOn(console, 'error').mockImplementation(() => { });
+        (api.getTags as jest.Mock).mockRejectedValue(new Error('取得失敗'));
+
+        render(<AddTask onTaskAdded={mockOnTaskAdded} />);
+
+        await waitFor(() => {
+            expect(consoleErrorSpy).toHaveBeenCalledWith(
+                'タグの取得に失敗しました:',
+                expect.any(Error)
+            );
+        });
+
+        consoleErrorSpy.mockRestore();
     });
 });
