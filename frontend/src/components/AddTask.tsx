@@ -1,29 +1,26 @@
 import React, { useState, useEffect } from 'react';
 import styles from '../styles/AddTask.module.css';
-import { addTask, getTags, NewTask, Tag } from '../api';
+import { NewTask } from '../types';
+import { useTags } from '../hooks/useTags';
+import { useTasks } from '../hooks/useTasks';
 
 type AddTaskProps = {
   onTaskAdded: () => void;
 };
 
 const AddTask: React.FC<AddTaskProps> = ({ onTaskAdded }) => {
-  const [title, setTitle] = useState<string>('');
-  const [description, setDescription] = useState<string>('');
-  const [dueDate, setDueDate] = useState<string>('');
+  const [title, setTitle] = useState('');
+  const [description, setDescription] = useState('');
+  const [dueDate, setDueDate] = useState('');
   const [tagIds, setTagIds] = useState<number[]>([]);
-  const [tags, setTags] = useState<Tag[]>([]);
-  const [loading, setLoading] = useState<boolean>(false);
-  const [error, setError] = useState<string>('');
+  const [error, setError] = useState('');
 
-  // タグ一覧を取得
+  const { tags, fetchTags } = useTags();
+  const { handleAddTask } = useTasks();
+
   useEffect(() => {
-
-    getTags()
-      .then(res => {
-        setTags(res.data);
-      })
-      .catch(err => console.error('タグの取得に失敗しました:', err));
-  }, []);
+    fetchTags();
+  }, [fetchTags]);
 
   const handleSubmit = async (e: React.FormEvent<HTMLFormElement>) => {
     e.preventDefault();
@@ -33,7 +30,6 @@ const AddTask: React.FC<AddTaskProps> = ({ onTaskAdded }) => {
       return;
     }
 
-    setLoading(true);
     setError('');
     try {
       const newTask: NewTask = {
@@ -41,9 +37,9 @@ const AddTask: React.FC<AddTaskProps> = ({ onTaskAdded }) => {
         description,
         completed: false,
         dueDate: dueDate || undefined,
-        tagIds: tagIds,
+        tagIds,
       };
-      await addTask(newTask);
+      await handleAddTask(newTask);
 
       setTitle('');
       setDescription('');
@@ -53,8 +49,6 @@ const AddTask: React.FC<AddTaskProps> = ({ onTaskAdded }) => {
     } catch (err) {
       setError('タスクの追加に失敗しました');
       console.error(err);
-    } finally {
-      setLoading(false);
     }
   };
 
@@ -107,8 +101,8 @@ const AddTask: React.FC<AddTaskProps> = ({ onTaskAdded }) => {
         ))}
       </select>
 
-      <button type="submit" disabled={loading} className={styles.button}>
-        {loading ? '追加中...' : '追加'}
+      <button type="submit" className={styles.button}>
+        追加
       </button>
 
       {error && <p className={styles.error}>{error}</p>}

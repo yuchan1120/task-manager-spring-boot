@@ -141,9 +141,13 @@ describe('TaskList', () => {
 
     test('タスクの削除に失敗した場合、エラーログが出力される', async () => {
       const consoleErrorSpy = jest.spyOn(console, 'error').mockImplementation(() => { });
-      (api.deleteTask as jest.Mock).mockRejectedValue(new Error('Delete failed'));
+
+      (api.getTasks as jest.Mock).mockResolvedValue({ data: mockTasks });
+      (api.getTags as jest.Mock).mockResolvedValue({ data: mockTags });
+      (api.deleteTask as jest.Mock).mockRejectedValue(new Error('削除失敗'));
 
       render(<TaskList />);
+
       const deleteButton = await screen.findByTestId('delete-button-1');
       fireEvent.click(deleteButton);
 
@@ -174,6 +178,7 @@ describe('TaskList', () => {
 
       await waitFor(() =>
         expect(api.updateTask).toHaveBeenCalledWith(1, {
+          id: 1,
           title: 'Updated Task A',
           description: 'Desc A',
           completed: false,

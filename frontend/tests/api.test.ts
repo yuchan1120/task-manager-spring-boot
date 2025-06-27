@@ -13,10 +13,9 @@ import {
   deleteTag,
   login,
   validateToken,
-  Task,
   Tag,
-  NewTask
 } from '../src/api';
+import { NewTask, Task } from '../src/types';
 
 const mock = new MockAdapter(axios);
 const token = 'test-token';

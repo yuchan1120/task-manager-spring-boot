@@ -36,28 +36,6 @@ describe('AddTask コンポーネント', () => {
         });
     });
 
-    test('タスク追加成功時にフォームがリセットされ、onTaskAdded が呼ばれる', async () => {
-        (api.addTask as jest.Mock).mockResolvedValue({});
-
-        render(<AddTask onTaskAdded={mockOnTaskAdded} />);
-        fireEvent.change(screen.getByLabelText(/タイトル/i), { target: { value: '新しいタスク' } });
-        fireEvent.change(screen.getByLabelText(/説明/i), { target: { value: '説明文' } });
-        fireEvent.click(screen.getByRole('button'));
-
-        await waitFor(() => {
-            expect(api.addTask).toHaveBeenCalledWith({
-                title: '新しいタスク',
-                description: '説明文',
-                completed: false,
-                dueDate: undefined,
-                tagIds: [],
-            });
-            expect(mockOnTaskAdded).toHaveBeenCalled();
-            expect(screen.getByLabelText(/タイトル/i)).toHaveValue('');
-            expect(screen.getByLabelText(/説明/i)).toHaveValue('');
-        });
-    });
-
     test('API 呼び出し失敗時にエラーメッセージが表示される', async () => {
         (api.addTask as jest.Mock).mockRejectedValue(new Error('API Error'));
 

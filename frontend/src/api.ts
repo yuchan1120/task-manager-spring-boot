@@ -1,26 +1,8 @@
 import axios, { AxiosResponse } from 'axios';
+import { NewTask, Task } from './types';
 
 const API_BASE = 'http://localhost:8080/api/tasks';
 const TAG_API_BASE = 'http://localhost:8080/api/tags';
-
-// タスクの型定義
-export type Task = {
-  id: number;
-  title: string;
-  description: string;
-  completed: boolean;
-  dueDate?: string; // ISO形式の文字列（例: "2025-06-20"）
-  tagId?: number;   // タグID（オプション）
-};
-
-// 新規作成時の入力型（id は不要）
-export type NewTask = {
-  title: string;
-  description: string;
-  completed: boolean;
-  dueDate?: string;
-  tagIds?: number[];
-};
 
 // タグの型定義
 export type Tag = {
