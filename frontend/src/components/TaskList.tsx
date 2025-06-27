@@ -1,64 +1,55 @@
-import React, { useEffect, useState, useCallback, useMemo } from 'react';
+import React, { useEffect, useState } from 'react';
 import styles from '../styles/TaskList.module.css';
 import AddTask from './AddTask';
-import { Tag, Task } from '../types';
-import { useTasks } from '../hooks/useTasks';
-import { useTags } from '../hooks/useTags';
 import TaskItem from './TaskItem';
 import TaskFilter from './TaskFilter';
+import { useTasks } from '../hooks/useTasks';
+import { useTags } from '../hooks/useTags';
+import { Tag, Task } from '../types';
+import { useFilteredTasks } from '../hooks/useFilteredTasks';
 
 const TaskList: React.FC = () => {
   const [editingTask, setEditingTask] = useState<Pick<Task, 'id' | 'title' | 'dueDate' | 'tagIds'> | null>(null);
   const [filter, setFilter] = useState<'all' | 'completed' | 'incomplete'>('all');
-  const [searchQuery, setSearchQuery] = useState<string>('');
+  const [searchQuery, setSearchQuery] = useState('');
   const [selectedTagId, setSelectedTagId] = useState<number | null>(null);
-  const [newTagName, setNewTagName] = useState<string>('');
-  const { tasks, loading, error, fetchTasks, handleToggle, handleDelete, handleEditSubmit } = useTasks();
-  const { tags, fetchTags, handleAddTag, handleUpdateTag, handleDeleteTag } = useTags();
+  const [newTagName, setNewTagName] = useState('');
   const [overdueTasks, setOverdueTasks] = useState<Task[]>([]);
-  const [showOverdueDialog, setShowOverdueDialog] = useState<boolean>(false);
+  const [showOverdueDialog, setShowOverdueDialog] = useState(false);
+
+  const {
+    tasks,
+    loading,
+    error,
+    fetchTasks,
+    handleToggle,
+    handleDelete,
+    handleEditSubmit,
+  } = useTasks();
+
+  const {
+    tags,
+    fetchTags,
+    handleAddTag,
+    handleUpdateTag,
+    handleDeleteTag,
+  } = useTags();
+
+  const filteredTasks = useFilteredTasks(tasks, filter, searchQuery, selectedTagId);
 
   useEffect(() => {
     fetchTasks();
     fetchTags();
   }, [fetchTasks, fetchTags]);
 
-
   useEffect(() => {
     const now = new Date();
-    const overdue = tasks.filter(task => {
-      return task.dueDate && new Date(task.dueDate) < now && !task.completed;
-    });
-
-    if (overdue.length > 0) {
-      setOverdueTasks(overdue);
-      setShowOverdueDialog(true);
-    }
+    const overdue = tasks.filter(task =>
+      task.dueDate && new Date(task.dueDate) < now && !task.completed
+    );
+    setOverdueTasks(overdue);
+    setShowOverdueDialog(overdue.length > 0);
   }, [tasks]);
-
-  const filteredAndSortedTasks = useMemo(() => {
-    const filtered = tasks.filter(task => {
-      const matchesTag =
-        selectedTagId === null || task.tagIds?.includes(selectedTagId);
-
-      const matchesFilter =
-        (filter === 'completed' && task.completed) ||
-        (filter === 'incomplete' && !task.completed) ||
-        filter === 'all';
-
-      const matchesSearch =
-        task.title.toLowerCase().includes(searchQuery.toLowerCase()) ||
-        task.description.toLowerCase().includes(searchQuery.toLowerCase());
-
-      return matchesTag && matchesFilter && matchesSearch;
-    });
-
-    return filtered.sort((a, b) => {
-      if (!a.dueDate) return 1;
-      if (!b.dueDate) return -1;
-      return new Date(a.dueDate).getTime() - new Date(b.dueDate).getTime();
-    });
-  }, [tasks, filter, searchQuery, selectedTagId]);
 
   const handleEditClick = (task: Task) => {
     setEditingTask({
@@ -77,12 +68,12 @@ const TaskList: React.FC = () => {
     setEditingTask(prev => prev ? { ...prev, dueDate: e.target.value } : prev);
   };
 
-  const onAddTag = async () => {
+  const handleAddNewTag = async () => {
     await handleAddTag(newTagName);
     setNewTagName('');
   };
 
-  const onTagContextMenu = async (e: React.MouseEvent, tag: Tag) => {
+  const handleTagContextMenu = async (e: React.MouseEvent, tag: Tag) => {
     e.preventDefault();
     const newName = prompt('タグ名を編集', tag.name);
     if (newName === null) return;
@@ -95,25 +86,26 @@ const TaskList: React.FC = () => {
     }
   };
 
+  const renderOverdueDialog = () => (
+    <div className={styles.dialog}>
+      <h3>期限を過ぎたタスクがあります</h3>
+      <ul>
+        {overdueTasks.map(task => (
+          <li key={task.id}>{task.title}（期限: {task.dueDate}）</li>
+        ))}
+      </ul>
+      <button onClick={() => setShowOverdueDialog(false)}>閉じる</button>
+    </div>
+  );
+
   return (
     <div className={styles.container}>
-      {showOverdueDialog && (
-        <div className={styles.dialog}>
-          <h3>期限を過ぎたタスクがあります</h3>
-          <ul>
-            {overdueTasks.map(task => (
-              <li key={task.id}>{task.title}（期限: {task.dueDate}）</li>
-            ))}
-          </ul>
-          <button onClick={() => setShowOverdueDialog(false)}>閉じる</button>
-        </div>
-      )}
+      {showOverdueDialog && renderOverdueDialog()}
 
       <div className={styles.fixedForm}>
         <AddTask onTaskAdded={fetchTasks} />
       </div>
 
-      {/* フィルターUIを分離したコンポーネントに置き換え */}
       <TaskFilter
         filter={filter}
         setFilter={setFilter}
@@ -124,11 +116,10 @@ const TaskList: React.FC = () => {
         tags={tags}
         newTagName={newTagName}
         setNewTagName={setNewTagName}
-        onAddTag={onAddTag}
-        onTagContextMenu={onTagContextMenu}
+        onAddTag={handleAddNewTag}
+        onTagContextMenu={handleTagContextMenu}
       />
 
-      {/* タスク一覧表示 */}
       <div className={styles.scrollArea}>
         {loading ? (
           <p>読み込み中...</p>
@@ -136,10 +127,17 @@ const TaskList: React.FC = () => {
           <p style={{ color: 'red' }}>{error}</p>
         ) : (
           <ul className={styles.taskList}>
-            {filteredAndSortedTasks.map(task => (
+            {filteredTasks.map((task: { id: any; title?: string; description?: string; completed?: boolean; dueDate?: string | undefined; tagIds?: number[] | undefined; }) => (
               <TaskItem
                 key={task.id}
-                task={task}
+                task={{
+                  ...task,
+                  title: task.title ?? '',
+                  description: task.description ?? '',
+                  completed: task.completed ?? false,
+                  dueDate: task.dueDate ?? '',
+                  tagIds: task.tagIds ?? [],
+                }}
                 tags={tags}
                 editingTask={editingTask}
                 setEditingTask={setEditingTask}
@@ -156,7 +154,6 @@ const TaskList: React.FC = () => {
       </div>
     </div>
   );
-
 };
 
 export default TaskList;
