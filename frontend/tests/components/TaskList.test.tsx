@@ -9,6 +9,14 @@ import * as api from '../../src/api';
 const mockTasks = [
   { id: 1, title: 'Task A', description: 'Desc A', completed: false, dueDate: '2025-06-20', tagIds: [] },
   { id: 2, title: 'Task B', description: 'Desc B', completed: true, dueDate: '2025-06-18', tagIds: [] },
+  {
+    id: 3,
+    title: '期限切れタスク',
+    description: 'これは期限切れです',
+    dueDate: new Date(Date.now() - 86400000).toISOString(), // 昨日
+    completed: false,
+    tagIds: [],
+  },
 ];
 
 const mockTags = [
@@ -272,7 +280,6 @@ describe('TaskList', () => {
     });
   });
 
-
   describe('TaskList Component', () => {
     test('検索バーでタスクを絞り込める', async () => {
       render(<TaskList />);
@@ -328,7 +335,6 @@ describe('TaskList', () => {
       });
     });
   });
-
 
   describe('タグ機能のテスト', () => {
     beforeEach(() => {
@@ -556,6 +562,34 @@ describe('TaskList', () => {
       expect(result).toEqual({
         ...editingTask,
         tagIds: [2, 3],
+      });
+    });
+  });
+
+  describe('TaskList ダイアログ操作', () => {
+    test('期限切れタスクがある場合にダイアログが表示される', async () => {
+      render(<TaskList />);
+
+      await waitFor(() => {
+        expect(screen.getByText('期限を過ぎたタスクがあります')).toBeInTheDocument();
+        expect(screen.getAllByText(/期限切れタスク/)).toHaveLength(2);
+      });
+    });
+
+    test('期限切れタスクがある場合にダイアログが表示され、閉じるボタンで閉じる', async () => {
+      render(<TaskList />);
+
+      // ダイアログが表示されるのを待つ
+      const dialogTitle = await screen.findByText('期限を過ぎたタスクがあります');
+      expect(dialogTitle).toBeInTheDocument();
+
+      // 「閉じる」ボタンをクリック
+      const closeButton = screen.getByText('閉じる');
+      fireEvent.click(closeButton);
+
+      // ダイアログが非表示になることを確認
+      await waitFor(() => {
+        expect(screen.queryByText('期限を過ぎたタスクがあります')).not.toBeInTheDocument();
       });
     });
   });
