@@ -15,11 +15,26 @@ const TaskList: React.FC = () => {
   const [newTagName, setNewTagName] = useState<string>('');
   const { tasks, loading, error, fetchTasks, handleToggle, handleDelete, handleEditSubmit } = useTasks();
   const { tags, fetchTags, handleAddTag, handleUpdateTag, handleDeleteTag } = useTags();
+  const [overdueTasks, setOverdueTasks] = useState<Task[]>([]);
+  const [showOverdueDialog, setShowOverdueDialog] = useState<boolean>(false);
 
   useEffect(() => {
     fetchTasks();
     fetchTags();
   }, [fetchTasks, fetchTags]);
+
+
+  useEffect(() => {
+    const now = new Date();
+    const overdue = tasks.filter(task => {
+      return task.dueDate && new Date(task.dueDate) < now && !task.completed;
+    });
+
+    if (overdue.length > 0) {
+      setOverdueTasks(overdue);
+      setShowOverdueDialog(true);
+    }
+  }, [tasks]);
 
   const filteredAndSortedTasks = useMemo(() => {
     const filtered = tasks.filter(task => {
@@ -82,6 +97,18 @@ const TaskList: React.FC = () => {
 
   return (
     <div className={styles.container}>
+      {showOverdueDialog && (
+        <div className={styles.dialog}>
+          <h3>期限を過ぎたタスクがあります</h3>
+          <ul>
+            {overdueTasks.map(task => (
+              <li key={task.id}>{task.title}（期限: {task.dueDate}）</li>
+            ))}
+          </ul>
+          <button onClick={() => setShowOverdueDialog(false)}>閉じる</button>
+        </div>
+      )}
+
       <div className={styles.fixedForm}>
         <AddTask onTaskAdded={fetchTasks} />
       </div>
