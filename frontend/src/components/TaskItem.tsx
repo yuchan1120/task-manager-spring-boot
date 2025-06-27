@@ -40,6 +40,7 @@ const TaskItem: React.FC<Props> = ({
                 checked={task.completed}
                 onChange={() => handleToggle(task.id)}
                 className={styles.checkbox}
+                data-testid={`toggle-checkbox-${task.id}`}
             />
 
             <div className={styles.taskContent}>
@@ -97,7 +98,7 @@ const TaskItem: React.FC<Props> = ({
 
                 <span>{task.description}</span>
 
-                <span className={styles.tagLabel}>
+                <span className={styles.tagLabel} data-testid="tag-label">
                     タグ: {
                         task.tagIds && task.tagIds.length > 0
                             ? task.tagIds.map(id => tags.find(tag => tag.id === id)?.name || '不明なタグ').join(', ')
@@ -105,12 +106,12 @@ const TaskItem: React.FC<Props> = ({
                     }
                 </span>
 
-                <span className={styles.dueDate}>
+                <span className={styles.dueDate} data-testid={`due-date-${task.id}`}>
                     期限: {formatDate(task.dueDate)}
                 </span>
 
                 <div className={styles.taskActions}>
-                    <button onClick={() => handleDelete(task.id)}>削除</button>
+                    <button data-testid={`delete-button-${task.id}`} onClick={() => handleDelete(task.id)}>削除</button>
                 </div>
             </div>
         </li>
